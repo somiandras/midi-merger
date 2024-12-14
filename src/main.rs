@@ -86,7 +86,7 @@ async fn main(spawner: Spawner) {
 
     let usart1_rx = UartRx::new(
         peripherals.UART1,
-        peripherals.PIN_9,
+        peripherals.PIN_5,
         Irqs,
         peripherals.DMA_CH2,
         uart_config,
