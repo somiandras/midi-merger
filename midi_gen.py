@@ -17,12 +17,11 @@ with midiout:
         # note_on = [0x90, 60, 112]  # channel 1, middle C, velocity 112
         # note_off = [0x80, 60, 0]
 
-        note_on = [0b10010000, 60, 112]
-        note_off = [0b10000000, 60, 0]
         print("Sending note on")
-        midiout.send_message(note_on)
+        midiout.send_message([0b10010000, 60, 112])
         time.sleep(0.5)
+
         print("Sending note off")
-        midiout.send_message(note_off)
+        midiout.send_message([0b10000000, 60, 0])
         time.sleep(0.1)
         keypress = input("Send note?")

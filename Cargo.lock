@@ -1020,6 +1020,7 @@ dependencies = [
  "embassy-rp",
  "embassy-sync",
  "embassy-time",
+ "heapless",
  "panic-probe",
 ]
 
