@@ -1,24 +1,23 @@
 use heapless::Vec;
 
 pub enum MidiMessage {
+    // Only differentiates between messages based on length and the status byte
     SystemRealtime(Vec<u8, 3>),
     Message(Vec<u8, 3>),
     RunningStatus(Vec<u8, 3>),
 }
 
 impl MidiMessage {
-    fn from_status_and_data(status: &Vec<u8, 1>, data: &Vec<u8, 2>) -> MidiMessage {
-        let mut content: Vec<u8, 3> = Vec::new();
+    fn from_status_and_data(status_byte: &Vec<u8, 1>, data_bytes: &Vec<u8, 2>) -> MidiMessage {
+        let mut data = Vec::from_slice(status_byte).unwrap();
+        data.extend_from_slice(data_bytes).unwrap();
 
-        content.extend_from_slice(status).unwrap();
-        content.extend_from_slice(data).unwrap();
-
-        if status.is_empty() {
-            MidiMessage::RunningStatus(content)
-        } else if (0xF8..=0xFF).contains(&content[0]) {
-            MidiMessage::SystemRealtime(content)
+        if status_byte.is_empty() {
+            MidiMessage::RunningStatus(data)
+        } else if (0xF8..=0xFF).contains(&data[0]) {
+            MidiMessage::SystemRealtime(data)
         } else {
-            MidiMessage::Message(content)
+            MidiMessage::Message(data)
         }
     }
 }

@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(async_closure)]
+#![feature(iter_chain)]
 
 use defmt_rtt as _;
 use embassy_executor::Spawner;
@@ -10,10 +10,11 @@ use embassy_rp::uart::{Async, Config, Error, Instance, InterruptHandler, Uart, U
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
 use heapless::Vec;
-use midi_parser::MidiMessage;
+use midi_uart::MidiUart;
 use panic_probe as _;
 
 mod midi_parser;
+mod midi_uart;
 
 static CHANNEL: Channel<ThreadModeRawMutex, Vec<u8, 3>, 10> = Channel::new();
 
@@ -22,46 +23,25 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
     defmt::info!("Write");
     loop {
         let message = CHANNEL.receive().await;
-        usart.write(&message).await.unwrap();
+        usart.write(&message).await.unwrap()
     }
 }
 
-async fn read_from_uart(mut usart: UartRx<'static, impl Instance, Async>) {
-    let mut buffer: [u8; 3] = [0x00; 3];
-    let mut parser = midi_parser::MidiParser::default();
+async fn read_from_uart(usart: UartRx<'static, impl Instance, Async>, channel: usize) {
+    let mut midi_usart = MidiUart::new(usart, channel);
     loop {
-        let result = usart.read(&mut buffer).await;
-        match result {
-            Ok(_) => {
-                for byte in &buffer {
-                    if let Some(message) = parser.feed_byte(byte) {
-                        match message {
-                            MidiMessage::SystemRealtime(data) => CHANNEL.send(data).await,
-                            MidiMessage::Message(data) => CHANNEL.send(data).await,
-                            MidiMessage::RunningStatus(data) => CHANNEL.send(data).await,
-                        }
-                    };
-                }
-            }
-            Err(err) => match err {
-                Error::Break => defmt::error!("Error: Break"),
-                Error::Framing => defmt::error!("Error: Framing"),
-                Error::Overrun => defmt::error!("Error: Overrun"),
-                Error::Parity => defmt::error!("Error: Parity"),
-                _ => defmt::error!("Other error"),
-            },
-        }
+        let message = midi_usart.read().await.unwrap();
     }
 }
 
 #[embassy_executor::task]
 async fn read_uart0(usart: UartRx<'static, UART0, Async>) {
-    read_from_uart(usart).await
+    read_from_uart(usart, 0).await
 }
 
 #[embassy_executor::task]
 async fn read_uart1(usart: UartRx<'static, UART1, Async>) {
-    read_from_uart(usart).await
+    read_from_uart(usart, 1).await
 }
 
 #[embassy_executor::main]
