@@ -1,10 +1,10 @@
 use heapless::Vec;
 
 pub enum MidiMessage {
-    // Only differentiates between messages based on length and the status byte
     SystemRealtime(Vec<u8, 3>),
-    Message(Vec<u8, 3>),
     RunningStatus(Vec<u8, 3>),
+    Voice(Vec<u8, 3>),
+    SystemCommon(Vec<u8, 3>),
 }
 
 impl MidiMessage {
@@ -16,8 +16,16 @@ impl MidiMessage {
             MidiMessage::RunningStatus(data)
         } else if (0xF8..=0xFF).contains(&data[0]) {
             MidiMessage::SystemRealtime(data)
+        } else if (0x80..=0xEF).contains(&data[0]) {
+            MidiMessage::Voice(data)
+        } else if (0xF1..=0xF3).contains(&data[0])
+            || data[0] == 0xF6
+            || (0xF9..=0xFC).contains(&data[0])
+        {
+            MidiMessage::SystemCommon(data)
         } else {
-            MidiMessage::Message(data)
+            defmt::error!("Unknown status: {=u8}", data[0]);
+            panic!("Unknown status")
         }
     }
 }

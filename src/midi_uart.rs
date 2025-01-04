@@ -2,21 +2,28 @@ use embassy_rp::uart::{Async, Error, Instance, UartRx};
 
 use crate::midi_parser::{MidiMessage, MidiParser};
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum UartChannel {
+    #[default]
+    Zero,
+    One,
+}
+
 pub struct UartMidiMessage {
     // Wraps MidiMessage to record the UART channel where the message comes from
-    message: MidiMessage,
-    uart_channel: usize,
+    pub message: MidiMessage,
+    pub uart_channel: UartChannel,
 }
 
 pub struct MidiUart<'a, T: Instance> {
     pub usart: UartRx<'a, T, Async>,
-    pub uart_channel: usize,
+    pub uart_channel: UartChannel,
     buffer: [u8; 1],
     parser: MidiParser,
 }
 
 impl<'a, T: Instance> MidiUart<'a, T> {
-    pub fn new(usart: UartRx<'static, T, Async>, uart_channel: usize) -> Self {
+    pub fn new(usart: UartRx<'static, T, Async>, uart_channel: UartChannel) -> Self {
         let buffer: [u8; 1] = [0x00];
         let parser = MidiParser::default();
 
