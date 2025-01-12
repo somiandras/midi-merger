@@ -38,6 +38,7 @@ target/
 *.tar.gz
 
 # Local Python files
-/scripts
+scripts/
 pyproject.toml
 poetry.lock
+.venv/

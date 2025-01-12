@@ -1,1 +1,0 @@
-poetry run python midi_gen.py
