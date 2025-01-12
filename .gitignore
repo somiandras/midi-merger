@@ -36,3 +36,8 @@ target/
 *.rpt
 *.zip
 *.tar.gz
+
+# Local Python files
+/scripts
+pyproject.toml
+poetry.lock
