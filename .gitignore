@@ -21,6 +21,7 @@ target/
 # Backup files
 *.bak
 *.sch-bak
+*.lck
 
 # Cache files
 *-cache.lib
