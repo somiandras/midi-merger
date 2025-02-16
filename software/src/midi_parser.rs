@@ -1,5 +1,7 @@
+use defmt::{write, Format};
 use heapless::Vec;
 
+#[derive(Debug)]
 pub enum MidiMessage {
     SystemRealtime(Vec<u8, 3>),
     RunningStatus(Vec<u8, 3>),
@@ -30,6 +32,33 @@ impl MidiMessage {
     }
 }
 
+impl Format for MidiMessage {
+    fn format(&self, fmt: defmt::Formatter) {
+        match self {
+            MidiMessage::RunningStatus(message) => {
+                for byte in message {
+                    write!(fmt, " {=u8:x}", byte)
+                }
+            }
+            MidiMessage::SystemCommon(message) => {
+                for byte in message {
+                    write!(fmt, " {=u8:x}", byte)
+                }
+            }
+            MidiMessage::SystemRealtime(message) => {
+                for byte in message {
+                    write!(fmt, " {=u8:x}", byte)
+                }
+            }
+            MidiMessage::Voice(message) => {
+                for byte in message {
+                    write!(fmt, " {=u8:x}", byte)
+                }
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct MidiParser {
     status: Vec<u8, 1>,
@@ -49,15 +78,14 @@ impl Default for MidiParser {
 
 impl MidiParser {
     fn clear(&mut self) {
-        self.status.clear();
-        self.data.clear();
-        self.expected_data_bytes = Default::default();
+        *self = Self::default();
     }
 
     pub fn feed_byte(&mut self, &byte: &u8) -> Option<MidiMessage> {
         if (0xF8..=0xFF).contains(&byte) {
             // SystemRealtime
-            return Some(MidiMessage::from_status_and_data(&self.status, &self.data));
+            let status_byte = Vec::from_slice(&[byte]).unwrap();
+            return Some(MidiMessage::from_status_and_data(&status_byte, &self.data));
         }
 
         if (byte & 0x80) == 0x80 {
@@ -77,10 +105,19 @@ impl MidiParser {
                 // everything else has two databytes
                 self.expected_data_bytes = 2;
             }
-            panic!("Unknown status byte");
         } else {
-            // data byte, should panic if we already have 2 data bytes
-            self.data.push(byte).unwrap();
+            // data byte
+            match self.data.push(byte) {
+                Ok(_) => {}
+                Err(byte) => {
+                    defmt::error!(
+                        "new byte: {=u8:x}, status: {}, data: {}",
+                        byte,
+                        self.status.as_slice(),
+                        self.data.as_slice()
+                    )
+                }
+            }
         }
 
         if self.data.len() == self.expected_data_bytes {

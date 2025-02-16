@@ -26,7 +26,6 @@ struct UartStatus {
 
 #[embassy_executor::task]
 async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
-    defmt::info!("Write");
     let mut uart_status = UartStatus::default();
     loop {
         let message = CHANNEL.receive().await;
@@ -44,19 +43,22 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
                 usart.write(&data).await.unwrap();
             }
             MidiMessage::RunningStatus(data) => {
-                if uart_status.last_tx_from.unwrap() != message.uart_channel {
-                    // we already got another message from the other channel so
-                    // running status is not valid anymore,
-                    // send the proper status first
-                    match message.uart_channel {
-                        UartChannel::Zero => {
-                            usart.write(&[uart_status.uart0.unwrap()]).await.unwrap()
-                        }
-                        UartChannel::One => {
-                            usart.write(&[uart_status.uart1.unwrap()]).await.unwrap()
+                if let Some(prev_channel) = uart_status.last_tx_from {
+                    if prev_channel != message.uart_channel {
+                        // we already got another message from the other channel so
+                        // running status is not valid anymore,
+                        // send the proper status first
+                        match message.uart_channel {
+                            UartChannel::Zero => {
+                                usart.write(&[uart_status.uart0.unwrap()]).await.unwrap()
+                            }
+                            UartChannel::One => {
+                                usart.write(&[uart_status.uart1.unwrap()]).await.unwrap()
+                            }
                         }
                     }
                 }
+
                 usart.write(&data).await.unwrap()
             }
         }

@@ -1,8 +1,8 @@
+use crate::midi_parser::{MidiMessage, MidiParser};
+use defmt::Format;
 use embassy_rp::uart::{Async, Error, Instance, UartRx};
 
-use crate::midi_parser::{MidiMessage, MidiParser};
-
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Format)]
 pub enum UartChannel {
     #[default]
     Zero,
@@ -41,6 +41,23 @@ impl<'a, T: Instance> MidiUart<'a, T> {
                 Ok(_) => {
                     for byte in &self.buffer {
                         if let Some(message) = self.parser.feed_byte(byte) {
+                            match &message {
+                                MidiMessage::SystemRealtime(_) | MidiMessage::SystemCommon(_) => {}
+                                MidiMessage::RunningStatus(_) => {
+                                    defmt::debug!(
+                                        "Running Status {} on {}",
+                                        message,
+                                        self.uart_channel
+                                    );
+                                }
+                                MidiMessage::Voice(_) => {
+                                    defmt::debug!(
+                                        "Voice Message {} on {}",
+                                        message,
+                                        self.uart_channel
+                                    );
+                                }
+                            }
                             break 'outer Ok(UartMidiMessage {
                                 message,
                                 uart_channel: self.uart_channel,
