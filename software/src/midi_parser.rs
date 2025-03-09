@@ -8,27 +8,39 @@ pub enum MidiMessage {
     Voice(Vec<u8, 3>),
     SystemCommon(Vec<u8, 3>),
 }
+#[derive(Debug, Clone)]
+pub enum MidiMessageError {
+    UnknownStatus,
+    DuplicateStatus,
+    UnexpectedDataByte,
+}
 
 impl MidiMessage {
-    fn from_status_and_data(status_byte: &Vec<u8, 1>, data_bytes: &Vec<u8, 2>) -> MidiMessage {
+    fn from_status_and_data(
+        status_byte: &Vec<u8, 1>,
+        data_bytes: &Vec<u8, 2>,
+    ) -> Result<Self, MidiMessageError> {
         let mut data = Vec::from_slice(status_byte).unwrap();
         data.extend_from_slice(data_bytes).unwrap();
 
+        let message: MidiMessage;
+
         if status_byte.is_empty() {
-            MidiMessage::RunningStatus(data)
+            message = MidiMessage::RunningStatus(data)
         } else if (0xF8..=0xFF).contains(&data[0]) {
-            MidiMessage::SystemRealtime(data)
+            message = MidiMessage::SystemRealtime(data)
         } else if (0x80..=0xEF).contains(&data[0]) {
-            MidiMessage::Voice(data)
+            message = MidiMessage::Voice(data)
         } else if (0xF1..=0xF3).contains(&data[0])
             || data[0] == 0xF6
             || (0xF9..=0xFC).contains(&data[0])
         {
-            MidiMessage::SystemCommon(data)
+            message = MidiMessage::SystemCommon(data)
         } else {
-            defmt::error!("Unknown status: {=u8}", data[0]);
-            panic!("Unknown status")
+            return Err(MidiMessageError::UnknownStatus);
         }
+
+        Ok(message)
     }
 }
 
@@ -81,16 +93,20 @@ impl MidiParser {
         *self = Self::default();
     }
 
-    pub fn feed_byte(&mut self, &byte: &u8) -> Option<MidiMessage> {
+    pub fn feed_byte(&mut self, &byte: &u8) -> Result<Option<MidiMessage>, MidiMessageError> {
         if (0xF8..=0xFF).contains(&byte) {
             // SystemRealtime
             let status_byte = Vec::from_slice(&[byte]).unwrap();
-            return Some(MidiMessage::from_status_and_data(&status_byte, &self.data));
+            let message = MidiMessage::from_status_and_data(&status_byte, &self.data)?;
+            return Ok(Some(message));
         }
 
         if (byte & 0x80) == 0x80 {
-            // status byte, will panic if we already have one
-            self.status.push(byte).unwrap();
+            // status byte
+            if let Err(_) = self.status.push(byte) {
+                // We already have an actice status, raise error
+                return Err(MidiMessageError::DuplicateStatus);
+            };
 
             if byte & 0xF0 == 0xC0 || byte & 0xF0 == 0xD0 || byte == 0xF1 || byte == 0xF3 {
                 // 0xCx: Program change
@@ -107,26 +123,19 @@ impl MidiParser {
             }
         } else {
             // data byte
-            match self.data.push(byte) {
-                Ok(_) => {}
-                Err(byte) => {
-                    defmt::error!(
-                        "new byte: {=u8:x}, status: {}, data: {}",
-                        byte,
-                        self.status.as_slice(),
-                        self.data.as_slice()
-                    )
-                }
+            if let Err(_) = self.data.push(byte) {
+                // We got more data bytes than expected, raise error
+                return Err(MidiMessageError::UnexpectedDataByte);
             }
         }
 
         if self.data.len() == self.expected_data_bytes {
             // we got all data bytes we expected, let's create a message and clear buffers
-            let message = MidiMessage::from_status_and_data(&self.status, &self.data);
+            let message = MidiMessage::from_status_and_data(&self.status, &self.data)?;
             self.clear();
-            Some(message)
+            Ok(Some(message))
         } else {
-            None
+            Ok(None)
         }
     }
 }

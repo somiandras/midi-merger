@@ -8,8 +8,8 @@ use embassy_rp::peripherals::{UART0, UART1};
 use embassy_rp::uart::{Async, Config, Instance, InterruptHandler, Uart, UartRx, UartTx};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
-use midi_parser::MidiMessage;
-use midi_uart::{MidiUart, UartChannel, UartMidiMessage};
+use midi_parser::{MidiMessage, MidiMessageError};
+use midi_uart::{MidiUart, UartChannel, UartMidiError, UartMidiMessage};
 use panic_probe as _;
 
 mod midi_parser;
@@ -66,11 +66,53 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
     }
 }
 
-async fn read_from_uart(usart: UartRx<'static, impl Instance, Async>, channel: UartChannel) {
-    let mut midi_usart = MidiUart::new(usart, channel);
+async fn read_from_uart(usart: UartRx<'static, impl Instance, Async>, uart_channel: UartChannel) {
+    let mut midi_uart = MidiUart::new(usart, uart_channel);
     loop {
-        let message = midi_usart.read().await.unwrap();
-        CHANNEL.send(message).await;
+        let result = midi_uart.read().await;
+        match result {
+            Ok(message) => {
+                defmt::debug!(
+                    "Received message: {:?} on channel {:?}",
+                    message.message,
+                    message.uart_channel
+                );
+                CHANNEL.send(message).await;
+            }
+            Err(error) => {
+                // Handle error
+                match error {
+                    UartMidiError::UartError(uart_error) => match uart_error {
+                        embassy_rp::uart::Error::Overrun => {
+                            defmt::error!("Uart Overrun error");
+                        }
+                        embassy_rp::uart::Error::Framing => {
+                            defmt::error!("Uart Framing error");
+                        }
+                        embassy_rp::uart::Error::Break => {
+                            defmt::error!("Uart Break error");
+                        }
+                        embassy_rp::uart::Error::Parity => {
+                            defmt::error!("Uart Parity error");
+                        }
+                        _ => {
+                            defmt::error!("Unknown Uart error");
+                        }
+                    },
+                    UartMidiError::MessageError(err) => match err {
+                        MidiMessageError::DuplicateStatus => {
+                            defmt::error!("Duplicate status byte");
+                        }
+                        MidiMessageError::UnexpectedDataByte => {
+                            defmt::error!("Unexpected data byte");
+                        }
+                        MidiMessageError::UnknownStatus => {
+                            defmt::error!("Unknown status byte");
+                        }
+                    },
+                }
+            }
+        }
     }
 }
 
