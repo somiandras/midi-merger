@@ -1,1 +1,1 @@
-DEFMT_LOG=error cargo build --release
+DEFMT_LOG=error cargo run --release

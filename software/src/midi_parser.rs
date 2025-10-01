@@ -20,7 +20,7 @@ impl MidiMessage {
         status_byte: &Vec<u8, 1>,
         data_bytes: &Vec<u8, 2>,
     ) -> Result<Self, MidiMessageError> {
-        let mut data = Vec::from_slice(status_byte).unwrap();
+        let mut data = heapless::Vec::from_slice(status_byte).unwrap();
         data.extend_from_slice(data_bytes).unwrap();
 
         let message: MidiMessage;
@@ -97,17 +97,19 @@ impl MidiParser {
         if (0xF8..=0xFF).contains(&byte) {
             // SystemRealtime
             let status_byte = Vec::from_slice(&[byte]).unwrap();
-            let message = MidiMessage::from_status_and_data(&status_byte, &self.data)?;
+            let empty_data: Vec<u8, 2> = Vec::new();
+            let message = MidiMessage::from_status_and_data(&status_byte, &empty_data)?;
             return Ok(Some(message));
         }
 
         if (byte & 0x80) == 0x80 {
             // status byte
-            if let Err(_) = self.status.push(byte) {
-                // We already have an actice status, raise error
+            if self.status.push(byte).is_err() {
+                // We already have an active status, raise error
                 return Err(MidiMessageError::DuplicateStatus);
             };
 
+            // we need to set how many data bytes we expect
             if byte & 0xF0 == 0xC0 || byte & 0xF0 == 0xD0 || byte == 0xF1 || byte == 0xF3 {
                 // 0xCx: Program change
                 // 0xDx: Channel Pressure
@@ -123,7 +125,7 @@ impl MidiParser {
             }
         } else {
             // data byte
-            if let Err(_) = self.data.push(byte) {
+            if self.data.push(byte).is_err() {
                 // We got more data bytes than expected, raise error
                 return Err(MidiMessageError::UnexpectedDataByte);
             }

@@ -43,11 +43,13 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
                 usart.write(&data).await.unwrap();
             }
             MidiMessage::RunningStatus(data) => {
+                defmt::debug!("Running status: {:?}", data);
                 if let Some(prev_channel) = uart_status.last_tx_from {
                     if prev_channel != message.uart_channel {
                         // we already got another message from the other channel so
                         // running status is not valid anymore,
                         // send the proper status first
+                        defmt::debug!("Need to add previous status");
                         match message.uart_channel {
                             UartChannel::Zero => {
                                 usart.write(&[uart_status.uart0.unwrap()]).await.unwrap()
@@ -72,11 +74,17 @@ async fn read_from_uart(usart: UartRx<'static, impl Instance, Async>, uart_chann
         let result = midi_uart.read().await;
         match result {
             Ok(message) => {
-                defmt::debug!(
-                    "Received message: {:?} on channel {:?}",
-                    message.message,
-                    message.uart_channel
-                );
+                match message.message {
+                    MidiMessage::SystemRealtime(_) => {}
+                    _ => {
+                        defmt::info!(
+                            "Received message: {:?} on channel {:?}",
+                            message.message,
+                            uart_channel
+                        );
+                    }
+                }
+
                 CHANNEL.send(message).await;
             }
             Err(error) => {
