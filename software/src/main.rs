@@ -36,32 +36,54 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
                     UartChannel::Zero => uart_status.uart0 = Some(data[0]),
                     UartChannel::One => uart_status.uart1 = Some(data[0]),
                 }
-                usart.write(&data).await.unwrap();
+                if let Err(e) = usart.write(&data).await {
+                    defmt::error!("Failed to write Voice message: {:?}", e);
+                    continue;
+                }
             }
             MidiMessage::SystemCommon(data) | MidiMessage::SystemRealtime(data) => {
                 // Nothing to do, immediately send
-                usart.write(&data).await.unwrap();
+                if let Err(e) = usart.write(&data).await {
+                    defmt::error!("Failed to write System message: {:?}", e);
+                    continue;
+                }
             }
             MidiMessage::RunningStatus(data) => {
                 defmt::debug!("Running status: {:?}", data);
-                if let Some(prev_channel) = uart_status.last_tx_from {
-                    if prev_channel != message.uart_channel {
-                        // we already got another message from the other channel so
-                        // running status is not valid anymore,
-                        // send the proper status first
-                        defmt::debug!("Need to add previous status");
-                        match message.uart_channel {
-                            UartChannel::Zero => {
-                                usart.write(&[uart_status.uart0.unwrap()]).await.unwrap()
+
+                // Determine if we need to prepend status byte
+                let need_status = uart_status.last_tx_from
+                    .map(|prev| prev != message.uart_channel)
+                    .unwrap_or(true); // First message ever, need status
+
+                if need_status {
+                    // Get the appropriate status byte for this channel
+                    let status_byte = match message.uart_channel {
+                        UartChannel::Zero => uart_status.uart0,
+                        UartChannel::One => uart_status.uart1,
+                    };
+
+                    match status_byte {
+                        Some(status) => {
+                            defmt::debug!("Need to add previous status");
+                            if let Err(e) = usart.write(&[status]).await {
+                                defmt::error!("Failed to write status byte: {:?}", e);
+                                continue;
                             }
-                            UartChannel::One => {
-                                usart.write(&[uart_status.uart1.unwrap()]).await.unwrap()
-                            }
+                        }
+                        None => {
+                            // Running status without prior voice message - protocol violation
+                            defmt::error!("Running status without previous voice message on {:?}",
+                                         message.uart_channel);
+                            continue;
                         }
                     }
                 }
 
-                usart.write(&data).await.unwrap()
+                if let Err(e) = usart.write(&data).await {
+                    defmt::error!("Failed to write running status data: {:?}", e);
+                    continue;
+                }
             }
         }
         uart_status.last_tx_from = Some(message.uart_channel)
