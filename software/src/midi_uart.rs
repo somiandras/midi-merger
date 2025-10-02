@@ -40,34 +40,32 @@ impl<'a, T: Instance> MidiUart<'a, T> {
         }
     }
     pub async fn read(&mut self) -> Result<UartMidiMessage, UartMidiError> {
-        'outer: loop {
-            // NOTE: The buffer is of size 1, so we can only read one byte at a time. Maybe read in
-            // more bytes at once to improve performance? They will be fed to the parser one by one
-            // anyway though...
-            // We also have to forward SystemRealTime messages immediately, as they don't have any
-            // data bytes to wait for.
-            let read_result = self.usart.read(&mut self.buffer).await;
-            match read_result {
+        loop {
+            // Read bytes from UART
+            // NOTE: Currently using single-byte reads. Multi-byte buffering would improve
+            // performance but requires read_until_idle() which is not available in
+            // embassy-rp 0.2.0. Consider upgrading Embassy to enable this optimization.
+            match self.usart.read(&mut self.buffer).await {
                 Ok(_) => {
-                    // Got some bytes, let's feed them to the parser
+                    // Feed bytes to the parser one at a time
                     for byte in &self.buffer {
                         match self.parser.feed_byte(byte) {
-                            Ok(result) => {
-                                // Feeding a byte might result in a message, or not. If it does, we break
-                                // the loop and return the message. If it doesn't, we continue reading
-                                // bytes until we get a message.
-                                if let Some(message) = result {
-                                    break 'outer Ok(UartMidiMessage {
-                                        message,
-                                        uart_channel: self.uart_channel,
-                                    });
-                                }
+                            Ok(Some(message)) => {
+                                return Ok(UartMidiMessage {
+                                    message,
+                                    uart_channel: self.uart_channel,
+                                });
                             }
-                            Err(err) => break 'outer Err(UartMidiError::MessageError(err)),
-                        };
+                            Ok(None) => continue,
+                            Err(err) => return Err(UartMidiError::MessageError(err)),
+                        }
                     }
                 }
-                Err(err) => break 'outer Err(UartMidiError::UartError(err)),
+                Err(embassy_rp::uart::Error::Overrun) => {
+                    defmt::warn!("UART overrun on {:?}", self.uart_channel);
+                    continue;
+                }
+                Err(e) => return Err(UartMidiError::UartError(e)),
             }
         }
     }
