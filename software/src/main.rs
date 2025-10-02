@@ -15,7 +15,7 @@ use panic_probe as _;
 mod midi_parser;
 mod midi_uart;
 
-static CHANNEL: Channel<ThreadModeRawMutex, UartMidiMessage, 10> = Channel::new();
+static CHANNEL: Channel<ThreadModeRawMutex, UartMidiMessage, 64> = Channel::new();
 
 #[derive(Debug, Default)]
 struct UartStatus {
