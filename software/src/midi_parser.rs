@@ -95,6 +95,23 @@ impl MidiParser {
         *self = Self::default();
     }
 
+    /// Reset the parser to its initial state
+    ///
+    /// This should be called after UART errors (Overrun, Framing, Break, Parity)
+    /// to prevent corrupted parser state from affecting subsequent messages.
+    ///
+    /// Example scenario requiring reset:
+    /// 1. Parser receives 0x90 (Note On status byte)
+    /// 2. Expecting 2 data bytes next
+    /// 3. UART Overrun error occurs (bytes lost)
+    /// 4. Without reset, parser still expects data bytes
+    /// 5. Next message's status byte would be misinterpreted as data!
+    ///
+    /// Calling reset() clears the internal state and allows clean recovery.
+    pub fn reset(&mut self) {
+        self.clear();
+    }
+
     pub fn feed_byte(&mut self, &byte: &u8) -> Result<Option<MidiMessage>, MidiMessageError> {
         // SystemRealtime messages can interrupt anything, including SysEx
         if (0xF8..=0xFF).contains(&byte) {

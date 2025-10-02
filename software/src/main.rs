@@ -5,7 +5,8 @@ use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::bind_interrupts;
 use embassy_rp::peripherals::{UART0, UART1};
-use embassy_rp::uart::{Async, Config, Instance, InterruptHandler, Uart, UartRx, UartTx};
+use embassy_rp::uart::{BufferedInterruptHandler, BufferedUart, BufferedUartRx, BufferedUartTx, Config, Instance};
+use embedded_io_async::Write;
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
 use midi_parser::{MidiMessage, MidiMessageError};
@@ -15,7 +16,27 @@ use panic_probe as _;
 mod midi_parser;
 mod midi_uart;
 
+// ============================================================================
+// STATIC BUFFERS
+// ============================================================================
+
+// Channel for passing MIDI messages from input tasks to output task
 static CHANNEL: Channel<ThreadModeRawMutex, UartMidiMessage, 64> = Channel::new();
+
+// BufferedUart requires static buffers for background interrupt-driven I/O.
+// These buffers allow the hardware to accumulate incoming bytes and queue
+// outgoing bytes without CPU intervention, reducing interrupt overhead.
+//
+// Memory usage: 256 bytes × 3 buffers = 768 bytes total (0.3% of 264KB RAM)
+
+// UART0 RX buffer: Receives MIDI from input 1
+static mut UART0_RX_BUF: [u8; 256] = [0u8; 256];
+
+// UART0 TX buffer: Sends merged MIDI output
+static mut UART0_TX_BUF: [u8; 256] = [0u8; 256];
+
+// UART1 RX buffer: Receives MIDI from input 2
+static mut UART1_RX_BUF: [u8; 256] = [0u8; 256];
 
 #[derive(Debug, Default)]
 struct UartStatus {
@@ -24,8 +45,12 @@ struct UartStatus {
     last_tx_from: Option<UartChannel>,
 }
 
+// ============================================================================
+// WRITE TASK - Merges MIDI from both inputs to single output
+// ============================================================================
+
 #[embassy_executor::task]
-async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
+async fn write_uart(mut usart: BufferedUartTx<'static, UART0>) {
     let mut uart_status = UartStatus::default();
     loop {
         let message = CHANNEL.receive().await;
@@ -90,7 +115,11 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
     }
 }
 
-async fn read_from_uart(usart: UartRx<'static, impl Instance, Async>, uart_channel: UartChannel) {
+// ============================================================================
+// READ TASK - Receives MIDI from one input and sends to channel
+// ============================================================================
+
+async fn read_from_uart(usart: BufferedUartRx<'static, impl Instance>, uart_channel: UartChannel) {
     let mut midi_uart = MidiUart::new(usart, uart_channel);
     loop {
         let result = midi_uart.read().await;
@@ -112,34 +141,45 @@ async fn read_from_uart(usart: UartRx<'static, impl Instance, Async>, uart_chann
             Err(error) => {
                 // Handle error
                 match error {
-                    UartMidiError::UartError(uart_error) => match uart_error {
-                        embassy_rp::uart::Error::Overrun => {
-                            defmt::error!("Uart Overrun error");
+                    UartMidiError::UartError(uart_error) => {
+                        // UART hardware errors can leave the parser in an inconsistent state
+                        // (e.g., expecting data bytes that will never arrive due to lost bytes).
+                        // Reset the parser to ensure clean recovery.
+                        match uart_error {
+                            embassy_rp::uart::Error::Overrun => {
+                                defmt::error!("Uart Overrun error");
+                            }
+                            embassy_rp::uart::Error::Framing => {
+                                defmt::error!("Uart Framing error");
+                            }
+                            embassy_rp::uart::Error::Break => {
+                                defmt::error!("Uart Break error");
+                            }
+                            embassy_rp::uart::Error::Parity => {
+                                defmt::error!("Uart Parity error");
+                            }
+                            _ => {
+                                defmt::error!("Unknown Uart error");
+                            }
                         }
-                        embassy_rp::uart::Error::Framing => {
-                            defmt::error!("Uart Framing error");
+                        // Reset parser after any UART error to prevent state corruption
+                        midi_uart.reset_parser();
+                    }
+                    UartMidiError::MessageError(err) => {
+                        // MIDI protocol errors are already handled by the parser
+                        // (parser state is reset internally when appropriate)
+                        match err {
+                            MidiMessageError::DuplicateStatus => {
+                                defmt::error!("Duplicate status byte");
+                            }
+                            MidiMessageError::UnexpectedDataByte => {
+                                defmt::error!("Unexpected data byte");
+                            }
+                            MidiMessageError::UnknownStatus => {
+                                defmt::error!("Unknown status byte");
+                            }
                         }
-                        embassy_rp::uart::Error::Break => {
-                            defmt::error!("Uart Break error");
-                        }
-                        embassy_rp::uart::Error::Parity => {
-                            defmt::error!("Uart Parity error");
-                        }
-                        _ => {
-                            defmt::error!("Unknown Uart error");
-                        }
-                    },
-                    UartMidiError::MessageError(err) => match err {
-                        MidiMessageError::DuplicateStatus => {
-                            defmt::error!("Duplicate status byte");
-                        }
-                        MidiMessageError::UnexpectedDataByte => {
-                            defmt::error!("Unexpected data byte");
-                        }
-                        MidiMessageError::UnknownStatus => {
-                            defmt::error!("Unknown status byte");
-                        }
-                    },
+                    }
                 }
             }
         }
@@ -147,14 +187,18 @@ async fn read_from_uart(usart: UartRx<'static, impl Instance, Async>, uart_chann
 }
 
 #[embassy_executor::task]
-async fn read_uart0(usart: UartRx<'static, UART0, Async>) {
+async fn read_uart0(usart: BufferedUartRx<'static, UART0>) {
     read_from_uart(usart, UartChannel::Zero).await
 }
 
 #[embassy_executor::task]
-async fn read_uart1(usart: UartRx<'static, UART1, Async>) {
+async fn read_uart1(usart: BufferedUartRx<'static, UART1>) {
     read_from_uart(usart, UartChannel::One).await
 }
+
+// ============================================================================
+// MAIN - System initialization and task spawning
+// ============================================================================
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -162,35 +206,61 @@ async fn main(spawner: Spawner) {
 
     let peripherals = embassy_rp::init(Default::default());
 
+    // Bind UART interrupts to handlers
+    // BufferedUart uses interrupts (not DMA) to transfer data between hardware
+    // and software buffers, which is more efficient for byte-by-byte protocols
+    // like MIDI where data arrives in small bursts.
     bind_interrupts!(struct Irqs {
-        UART0_IRQ => InterruptHandler<UART0>;
-        UART1_IRQ => InterruptHandler<UART1>;
+        UART0_IRQ => BufferedInterruptHandler<UART0>;
+        UART1_IRQ => BufferedInterruptHandler<UART1>;
     });
 
+    // MIDI standard baud rate: 31,250 bits/sec
+    // This unusual rate was chosen in 1983 to work with available clock crystals
     let mut uart_config = Config::default();
     uart_config.baudrate = 31250;
 
-    let usart0 = Uart::new(
-        peripherals.UART0,
-        peripherals.PIN_12,
-        peripherals.PIN_13,
-        Irqs,
-        peripherals.DMA_CH0,
-        peripherals.DMA_CH1,
+    // UART0: Bidirectional (receives input 1, transmits merged output)
+    // Uses BufferedUart for efficient interrupt-driven I/O with background buffering
+    //
+    // How BufferedUart works:
+    // 1. Hardware UART receives bytes and triggers interrupt
+    // 2. Interrupt handler copies bytes from hardware FIFO to software buffer (UART0_RX_BUF)
+    // 3. Application reads from software buffer asynchronously (no waiting for hardware)
+    // 4. This decouples hardware timing from application logic
+    //
+    // Safety: We use unsafe to pass static mut buffers. This is safe because:
+    // - Each buffer is used by only one UART instance
+    // - BufferedUart takes ownership and manages exclusive access
+    let usart0 = BufferedUart::new(
+        peripherals.UART0,      // Hardware peripheral
+        Irqs,                   // Interrupt bindings
+        peripherals.PIN_12,     // TX pin (output to MIDI OUT)
+        peripherals.PIN_13,     // RX pin (input from MIDI IN 1)
+        unsafe { &mut UART0_TX_BUF },  // TX buffer for outgoing data
+        unsafe { &mut UART0_RX_BUF },  // RX buffer for incoming data
         uart_config,
     );
 
+    // Split UART0 into separate TX and RX handles
+    // This allows independent operation: one task writes, another reads
     let (usart0_tx, usart0_rx) = usart0.split();
 
-    let usart1_rx = UartRx::new(
-        peripherals.UART1,
-        peripherals.PIN_5,
-        Irqs,
-        peripherals.DMA_CH2,
+    // UART1: Receive-only (input 2)
+    // We only need RX for this input, so we create a BufferedUartRx directly
+    // instead of creating a full BufferedUart and splitting it
+    let usart1_rx = BufferedUartRx::new(
+        peripherals.UART1,      // Hardware peripheral
+        Irqs,                   // Interrupt bindings
+        peripherals.PIN_5,      // RX pin (input from MIDI IN 2)
+        unsafe { &mut UART1_RX_BUF },  // RX buffer for incoming data
         uart_config,
     );
 
     defmt::info!("Initialized.");
+
+    // Spawn async tasks
+    // Each task runs concurrently, scheduled by the Embassy executor
     spawner.spawn(read_uart0(usart0_rx)).unwrap();
     spawner.spawn(read_uart1(usart1_rx)).unwrap();
     spawner.spawn(write_uart(usart0_tx)).unwrap();
