@@ -5,10 +5,12 @@ use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_rp::bind_interrupts;
 use embassy_rp::peripherals::{UART0, UART1};
-use embassy_rp::uart::{BufferedInterruptHandler, BufferedUart, BufferedUartRx, BufferedUartTx, Config, Instance};
-use embedded_io_async::Write;
+use embassy_rp::uart::{
+    BufferedInterruptHandler, BufferedUart, BufferedUartRx, BufferedUartTx, Config, Instance,
+};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::Channel;
+use embedded_io_async::Write;
 use midi_parser::{MidiMessage, MidiMessageError};
 use midi_uart::{MidiUart, UartChannel, UartMidiError, UartMidiMessage};
 use panic_probe as _;
@@ -77,7 +79,8 @@ async fn write_uart(mut usart: BufferedUartTx<'static, UART0>) {
                 defmt::debug!("Running status: {:?}", data);
 
                 // Determine if we need to prepend status byte
-                let need_status = uart_status.last_tx_from
+                let need_status = uart_status
+                    .last_tx_from
                     .map(|prev| prev != message.uart_channel)
                     .unwrap_or(true); // First message ever, need status
 
@@ -98,8 +101,10 @@ async fn write_uart(mut usart: BufferedUartTx<'static, UART0>) {
                         }
                         None => {
                             // Running status without prior voice message - protocol violation
-                            defmt::error!("Running status without previous voice message on {:?}",
-                                         message.uart_channel);
+                            defmt::error!(
+                                "Running status without previous voice message on {:?}",
+                                message.uart_channel
+                            );
                             continue;
                         }
                     }
@@ -233,12 +238,12 @@ async fn main(spawner: Spawner) {
     // - Each buffer is used by only one UART instance
     // - BufferedUart takes ownership and manages exclusive access
     let usart0 = BufferedUart::new(
-        peripherals.UART0,      // Hardware peripheral
-        Irqs,                   // Interrupt bindings
-        peripherals.PIN_12,     // TX pin (output to MIDI OUT)
-        peripherals.PIN_13,     // RX pin (input from MIDI IN 1)
-        unsafe { &mut UART0_TX_BUF },  // TX buffer for outgoing data
-        unsafe { &mut UART0_RX_BUF },  // RX buffer for incoming data
+        peripherals.UART0,            // Hardware peripheral
+        Irqs,                         // Interrupt bindings
+        peripherals.PIN_12,           // TX pin (output to MIDI OUT)
+        peripherals.PIN_13,           // RX pin (input from MIDI IN 1)
+        unsafe { &mut UART0_TX_BUF }, // TX buffer for outgoing data
+        unsafe { &mut UART0_RX_BUF }, // RX buffer for incoming data
         uart_config,
     );
 
@@ -250,10 +255,10 @@ async fn main(spawner: Spawner) {
     // We only need RX for this input, so we create a BufferedUartRx directly
     // instead of creating a full BufferedUart and splitting it
     let usart1_rx = BufferedUartRx::new(
-        peripherals.UART1,      // Hardware peripheral
-        Irqs,                   // Interrupt bindings
-        peripherals.PIN_5,      // RX pin (input from MIDI IN 2)
-        unsafe { &mut UART1_RX_BUF },  // RX buffer for incoming data
+        peripherals.UART1,            // Hardware peripheral
+        Irqs,                         // Interrupt bindings
+        peripherals.PIN_5,            // RX pin (input from MIDI IN 2)
+        unsafe { &mut UART1_RX_BUF }, // RX buffer for incoming data
         uart_config,
     );
 
