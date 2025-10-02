@@ -76,6 +76,7 @@ pub struct MidiParser {
     status: Vec<u8, 1>,
     data: Vec<u8, 2>,
     expected_data_bytes: usize,
+    in_sysex: bool,
 }
 
 impl Default for MidiParser {
@@ -84,6 +85,7 @@ impl Default for MidiParser {
             status: Default::default(),
             data: Default::default(),
             expected_data_bytes: 2,
+            in_sysex: false,
         }
     }
 }
@@ -94,12 +96,31 @@ impl MidiParser {
     }
 
     pub fn feed_byte(&mut self, &byte: &u8) -> Result<Option<MidiMessage>, MidiMessageError> {
+        // SystemRealtime messages can interrupt anything, including SysEx
         if (0xF8..=0xFF).contains(&byte) {
-            // SystemRealtime
             let status_byte = Vec::from_slice(&[byte]).unwrap();
             let empty_data: Vec<u8, 2> = Vec::new();
             let message = MidiMessage::from_status_and_data(&status_byte, &empty_data)?;
             return Ok(Some(message));
+        }
+
+        // Handle SysEx start (0xF0)
+        if byte == 0xF0 {
+            self.in_sysex = true;
+            self.clear();
+            return Ok(None); // Ignore SysEx, don't forward
+        }
+
+        // Handle SysEx end (0xF7)
+        if byte == 0xF7 {
+            self.in_sysex = false;
+            self.clear();
+            return Ok(None); // Ignore SysEx, don't forward
+        }
+
+        // Ignore all bytes while inside SysEx
+        if self.in_sysex {
+            return Ok(None);
         }
 
         if (byte & 0x80) == 0x80 {

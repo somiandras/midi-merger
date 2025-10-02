@@ -36,15 +36,15 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
                     UartChannel::Zero => uart_status.uart0 = Some(data[0]),
                     UartChannel::One => uart_status.uart1 = Some(data[0]),
                 }
-                if let Err(e) = usart.write(&data).await {
-                    defmt::error!("Failed to write Voice message: {:?}", e);
+                if let Err(_) = usart.write(&data).await {
+                    defmt::error!("Failed to write Voice message");
                     continue;
                 }
             }
             MidiMessage::SystemCommon(data) | MidiMessage::SystemRealtime(data) => {
                 // Nothing to do, immediately send
-                if let Err(e) = usart.write(&data).await {
-                    defmt::error!("Failed to write System message: {:?}", e);
+                if let Err(_) = usart.write(&data).await {
+                    defmt::error!("Failed to write System message");
                     continue;
                 }
             }
@@ -66,8 +66,8 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
                     match status_byte {
                         Some(status) => {
                             defmt::debug!("Need to add previous status");
-                            if let Err(e) = usart.write(&[status]).await {
-                                defmt::error!("Failed to write status byte: {:?}", e);
+                            if let Err(_) = usart.write(&[status]).await {
+                                defmt::error!("Failed to write status byte");
                                 continue;
                             }
                         }
@@ -80,8 +80,8 @@ async fn write_uart(mut usart: UartTx<'static, UART0, Async>) {
                     }
                 }
 
-                if let Err(e) = usart.write(&data).await {
-                    defmt::error!("Failed to write running status data: {:?}", e);
+                if let Err(_) = usart.write(&data).await {
+                    defmt::error!("Failed to write running status data");
                     continue;
                 }
             }
