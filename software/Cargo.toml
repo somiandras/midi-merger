@@ -23,3 +23,9 @@ embassy-time = "0.3.2"
 embassy-sync = "0.6.0"
 embedded-io-async = "0.6.1"
 heapless = { version = "0.8.0", features = ["defmt-03"] }
+
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = true          # Link-time optimization
+codegen-units = 1   # Better optimization, slower compile
+debug = true        # Keep debug info for probe-rs
