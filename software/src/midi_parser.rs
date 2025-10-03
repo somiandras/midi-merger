@@ -43,27 +43,14 @@ impl MidiMessage {
 
 impl Format for MidiMessage {
     fn format(&self, fmt: defmt::Formatter) {
-        match self {
-            MidiMessage::RunningStatus(message) => {
-                for byte in message {
-                    write!(fmt, " {=u8:x}", byte)
-                }
-            }
-            MidiMessage::SystemCommon(message) => {
-                for byte in message {
-                    write!(fmt, " {=u8:x}", byte)
-                }
-            }
-            MidiMessage::SystemRealtime(message) => {
-                for byte in message {
-                    write!(fmt, " {=u8:x}", byte)
-                }
-            }
-            MidiMessage::Voice(message) => {
-                for byte in message {
-                    write!(fmt, " {=u8:x}", byte)
-                }
-            }
+        let data = match self {
+            MidiMessage::Voice(d)
+            | MidiMessage::RunningStatus(d)
+            | MidiMessage::SystemCommon(d)
+            | MidiMessage::SystemRealtime(d) => d,
+        };
+        for byte in data {
+            write!(fmt, " {=u8:x}", byte)
         }
     }
 }
