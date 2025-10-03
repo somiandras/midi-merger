@@ -1,6 +1,15 @@
 use defmt::{write, Format};
 use heapless::Vec;
 
+/// A parsed MIDI message with its associated data bytes
+///
+/// MIDI messages are categorized into four types based on their status byte:
+/// - Voice: Channel-specific messages (Note On/Off, Control Change, etc.) (0x80-0xEF)
+/// - SystemCommon: System-wide messages (Song Position, Tune Request, etc.) (0xF1-0xF6)
+/// - SystemRealtime: Timing and synchronization messages (Clock, Start/Stop, etc.) (0xF8-0xFF)
+/// - RunningStatus: Data bytes without a status byte (reuses previous status)
+///
+/// Each variant contains a `Vec<u8, 3>` holding the complete message bytes.
 #[derive(Debug)]
 pub enum MidiMessage {
     SystemRealtime(Vec<u8, 3>),
@@ -8,10 +17,15 @@ pub enum MidiMessage {
     Voice(Vec<u8, 3>),
     SystemCommon(Vec<u8, 3>),
 }
+
+/// Errors that can occur during MIDI message parsing
 #[derive(Debug, Clone)]
 pub enum MidiMessageError {
+    /// Received an invalid or undefined MIDI status byte
     UnknownStatus,
+    /// Received a status byte while still processing a previous message
     DuplicateStatus,
+    /// Received more data bytes than expected for the current message type
     UnexpectedDataByte,
 }
 
@@ -55,6 +69,16 @@ impl Format for MidiMessage {
     }
 }
 
+/// Stateful MIDI 1.0 protocol parser
+///
+/// This parser implements the MIDI 1.0 specification, handling:
+/// - Running status (omitted status bytes)
+/// - System Realtime messages (can interrupt any message)
+/// - System Exclusive (SysEx) messages (0xF0...0xF7)
+/// - Variable-length messages (0-2 data bytes depending on status)
+///
+/// Feed bytes one at a time using `feed_byte()`. The parser maintains internal
+/// state and returns `Some(MidiMessage)` when a complete message is assembled.
 #[derive(Debug)]
 pub struct MidiParser {
     status: Vec<u8, 1>,
