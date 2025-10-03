@@ -96,7 +96,7 @@ impl MidiParser {
         self.clear();
     }
 
-    pub fn feed_byte(&mut self, &byte: &u8) -> Result<Option<MidiMessage>, MidiMessageError> {
+    pub fn feed_byte(&mut self, byte: u8) -> Result<Option<MidiMessage>, MidiMessageError> {
         // SystemRealtime messages can interrupt anything, including SysEx
         if (0xF8..=0xFF).contains(&byte) {
             let status_byte = Vec::from_slice(&[byte]).unwrap();

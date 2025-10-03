@@ -105,7 +105,7 @@ impl<'a, T: Instance> MidiUart<'a, T> {
             for byte in buf {
                 consumed += 1;
 
-                match self.parser.feed_byte(byte) {
+                match self.parser.feed_byte(*byte) {
                     Ok(Some(message)) => {
                         // Got a complete MIDI message!
                         // Mark these bytes as consumed so buffer can reuse the space
