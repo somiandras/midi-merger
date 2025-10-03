@@ -63,14 +63,14 @@ async fn write_uart(mut usart: BufferedUartTx<'static, UART0>) {
                     UartChannel::Zero => uart_status.uart0 = Some(data[0]),
                     UartChannel::One => uart_status.uart1 = Some(data[0]),
                 }
-                if let Err(_) = usart.write(&data).await {
+                if usart.write(&data).await.is_err() {
                     defmt::error!("Failed to write Voice message");
                     continue;
                 }
             }
             MidiMessage::SystemCommon(data) | MidiMessage::SystemRealtime(data) => {
                 // Nothing to do, immediately send
-                if let Err(_) = usart.write(&data).await {
+                if usart.write(&data).await.is_err() {
                     defmt::error!("Failed to write System message");
                     continue;
                 }
@@ -94,7 +94,7 @@ async fn write_uart(mut usart: BufferedUartTx<'static, UART0>) {
                     match status_byte {
                         Some(status) => {
                             defmt::debug!("Need to add previous status");
-                            if let Err(_) = usart.write(&[status]).await {
+                            if usart.write(&[status]).await.is_err() {
                                 defmt::error!("Failed to write status byte");
                                 continue;
                             }
@@ -110,7 +110,7 @@ async fn write_uart(mut usart: BufferedUartTx<'static, UART0>) {
                     }
                 }
 
-                if let Err(_) = usart.write(&data).await {
+                if usart.write(&data).await.is_err() {
                     defmt::error!("Failed to write running status data");
                     continue;
                 }
@@ -238,12 +238,14 @@ async fn main(spawner: Spawner) {
     // - Each buffer is used by only one UART instance
     // - BufferedUart takes ownership and manages exclusive access
     let usart0 = BufferedUart::new(
-        peripherals.UART0,            // Hardware peripheral
-        Irqs,                         // Interrupt bindings
-        peripherals.PIN_12,           // TX pin (output to MIDI OUT)
-        peripherals.PIN_13,           // RX pin (input from MIDI IN 1)
-        unsafe { &mut UART0_TX_BUF }, // TX buffer for outgoing data
-        unsafe { &mut UART0_RX_BUF }, // RX buffer for incoming data
+        peripherals.UART0,  // Hardware peripheral
+        Irqs,               // Interrupt bindings
+        peripherals.PIN_12, // TX pin (output to MIDI OUT)
+        peripherals.PIN_13, // RX pin (input from MIDI IN 1)
+        // Safe: Each static buffer is used by only one UART instance
+        // Using addr_of_mut!() to avoid direct mutable static reference
+        unsafe { &mut *core::ptr::addr_of_mut!(UART0_TX_BUF) }, // TX buffer for outgoing data
+        unsafe { &mut *core::ptr::addr_of_mut!(UART0_RX_BUF) }, // RX buffer for incoming data
         uart_config,
     );
 
@@ -255,10 +257,12 @@ async fn main(spawner: Spawner) {
     // We only need RX for this input, so we create a BufferedUartRx directly
     // instead of creating a full BufferedUart and splitting it
     let usart1_rx = BufferedUartRx::new(
-        peripherals.UART1,            // Hardware peripheral
-        Irqs,                         // Interrupt bindings
-        peripherals.PIN_5,            // RX pin (input from MIDI IN 2)
-        unsafe { &mut UART1_RX_BUF }, // RX buffer for incoming data
+        peripherals.UART1, // Hardware peripheral
+        Irqs,              // Interrupt bindings
+        peripherals.PIN_5, // RX pin (input from MIDI IN 2)
+        // Safe: Each static buffer is used by only one UART instance
+        // Using addr_of_mut!() to avoid direct mutable static reference
+        unsafe { &mut *core::ptr::addr_of_mut!(UART1_RX_BUF) }, // RX buffer for incoming data
         uart_config,
     );
 
