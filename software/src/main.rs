@@ -270,7 +270,13 @@ async fn main(spawner: Spawner) {
 
     // Spawn async tasks
     // Each task runs concurrently, scheduled by the Embassy executor
-    spawner.spawn(read_uart0(usart0_rx)).unwrap();
-    spawner.spawn(read_uart1(usart1_rx)).unwrap();
-    spawner.spawn(write_uart(usart0_tx)).unwrap();
+    spawner
+        .spawn(read_uart0(usart0_rx))
+        .expect("Failed to spawn read_uart0 task");
+    spawner
+        .spawn(read_uart1(usart1_rx))
+        .expect("Failed to spawn read_uart1 task");
+    spawner
+        .spawn(write_uart(usart0_tx))
+        .expect("Failed to spawn write_uart task");
 }
