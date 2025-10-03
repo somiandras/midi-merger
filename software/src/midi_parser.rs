@@ -31,10 +31,7 @@ impl MidiMessage {
             message = MidiMessage::SystemRealtime(data)
         } else if (0x80..=0xEF).contains(&data[0]) {
             message = MidiMessage::Voice(data)
-        } else if (0xF1..=0xF3).contains(&data[0])
-            || data[0] == 0xF6
-            || (0xF9..=0xFC).contains(&data[0])
-        {
+        } else if (0xF1..=0xF3).contains(&data[0]) || data[0] == 0xF6 {
             message = MidiMessage::SystemCommon(data)
         } else {
             return Err(MidiMessageError::UnknownStatus);
