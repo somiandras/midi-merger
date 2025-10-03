@@ -86,7 +86,10 @@ impl<'a, T: Instance> MidiUart<'a, T> {
             // Get a view into the buffered data without consuming it
             // This is the key to BufferedUart efficiency: we peek at available
             // data rather than blocking for a specific number of bytes
-            let buf = self.usart.fill_buf().await
+            let buf = self
+                .usart
+                .fill_buf()
+                .await
                 .map_err(UartMidiError::UartError)?;
 
             // If buffer is empty, the UART is idle. Loop and wait for more data.
