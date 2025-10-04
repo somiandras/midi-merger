@@ -43,3 +43,6 @@ scripts/
 pyproject.toml
 poetry.lock
 .venv/
+
+# Project management files
+project_mgmt/
