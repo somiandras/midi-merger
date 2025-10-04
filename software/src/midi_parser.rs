@@ -2,6 +2,19 @@ use defmt::{write, Format};
 use embassy_time::{Duration, Instant};
 use heapless::Vec;
 
+/// Parser state machine states
+///
+/// The parser operates in one of three modes:
+/// - `Reading`: Normal message parsing, accumulating status and data bytes
+/// - `Resyncing`: Error recovery mode, hunting for the next valid status byte
+/// - `InSysEx`: Inside a System Exclusive message, discarding all bytes until 0xF7
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ParserState {
+    Reading,
+    Resyncing,
+    InSysEx,
+}
+
 /// A parsed MIDI message with its associated data bytes
 ///
 /// MIDI messages are categorized into four types based on their status byte:
@@ -79,15 +92,19 @@ impl Format for MidiMessage {
 /// - System Realtime messages (can interrupt any message)
 /// - System Exclusive (SysEx) messages (0xF0...0xF7)
 /// - Variable-length messages (0-2 data bytes depending on status)
+/// - Resynchronization after errors (hunting for valid status bytes)
 ///
 /// Feed bytes one at a time using `feed_byte()`. The parser maintains internal
 /// state and returns `Some(MidiMessage)` when a complete message is assembled.
+///
+/// After errors, the parser enters resync mode where it discards all bytes until
+/// a valid status byte is found, allowing recovery from corrupted byte streams.
 #[derive(Debug)]
 pub struct MidiParser {
     status: Vec<u8, 1>,
     data: Vec<u8, 2>,
     expected_data_bytes: usize,
-    in_sysex: bool,
+    state: ParserState,
     last_byte_time: Option<Instant>,
 }
 
@@ -97,7 +114,7 @@ impl Default for MidiParser {
             status: Default::default(),
             data: Default::default(),
             expected_data_bytes: 2,
-            in_sysex: false,
+            state: ParserState::Reading,
             last_byte_time: None,
         }
     }
@@ -116,10 +133,11 @@ impl MidiParser {
         *self = Self::default();
     }
 
-    /// Reset the parser to its initial state
+    /// Reset the parser to its initial state and enter resynchronization mode
     ///
     /// This should be called after UART errors (Overrun, Framing, Break, Parity)
-    /// to prevent corrupted parser state from affecting subsequent messages.
+    /// or MIDI protocol errors to prevent corrupted parser state from affecting
+    /// subsequent messages.
     ///
     /// Example scenario requiring reset:
     /// 1. Parser receives 0x90 (Note On status byte)
@@ -128,19 +146,24 @@ impl MidiParser {
     /// 4. Without reset, parser still expects data bytes
     /// 5. Next message's status byte would be misinterpreted as data!
     ///
-    /// Calling reset() clears the internal state and allows clean recovery.
+    /// After calling reset(), the parser enters resync mode where it hunts for
+    /// the next valid status byte, discarding any garbage bytes in the stream.
+    /// This allows robust recovery from corrupted byte streams.
     pub fn reset(&mut self) {
         self.clear();
+        self.state = ParserState::Resyncing;
     }
 
     pub fn feed_byte(&mut self, byte: u8) -> Result<Option<MidiMessage>, MidiMessageError> {
         // SystemRealtime messages (0xF8-0xFF) can interrupt any message without affecting
-        // parser state. They are processed immediately and do NOT update the timestamp,
-        // ensuring the timeout only measures time between actual message bytes (status/data).
+        // parser state. They are processed immediately even during resync mode, and do NOT
+        // update the timestamp, ensuring the timeout only measures time between actual
+        // message bytes (status/data).
         if (0xF8..=0xFF).contains(&byte) {
             // Validate it's a defined SystemRealtime byte (not 0xF9 or 0xFD)
             if byte == 0xF9 || byte == 0xFD {
                 self.clear();
+                self.state = ParserState::Resyncing;
                 return Err(MidiMessageError::InvalidStatusByte);
             }
 
@@ -156,7 +179,49 @@ impl MidiParser {
         if let Some(last_time) = self.last_byte_time {
             if last_time.elapsed() > Duration::from_millis(Self::MIDI_BYTE_TIMEOUT_MS) {
                 self.clear();
-                defmt::warn!("MIDI message timeout - resetting parser");
+                self.state = ParserState::Resyncing;
+                defmt::warn!("MIDI message timeout - entering resync mode");
+            }
+        }
+
+        // State machine: handle different parser modes
+        match self.state {
+            ParserState::Resyncing => {
+                // Resynchronization mode: hunt for a valid status byte
+                //
+                // After errors, the byte stream may be corrupted. Instead of blindly processing
+                // bytes based on corrupt expectations, actively search for the next valid status
+                // byte (synchronization point) and discard any garbage in between.
+                //
+                // This prevents cascading errors where:
+                // - Data bytes are misinterpreted as status bytes
+                // - Status bytes are misinterpreted as data bytes
+                // - Phantom messages are created from garbage bytes
+                if (byte & 0x80) == 0x80 {
+                    // Found a status byte - validate it's in legal range
+                    if byte == 0xF4 || byte == 0xF5 || (0xF9..=0xFD).contains(&byte) {
+                        // Invalid/undefined status byte, keep hunting
+                        defmt::debug!("Resync: discarding invalid status byte {:#x}", byte);
+                        return Ok(None);
+                    }
+
+                    // Valid status byte found - exit resync mode and process normally
+                    defmt::info!("Resync complete on status byte {:#x}", byte);
+                    self.state = ParserState::Reading;
+                    // Fall through to Reading state processing below
+                } else {
+                    // Still hunting for status byte, discard this data byte
+                    defmt::debug!("Resync: discarding data byte {:#x}", byte);
+                    return Ok(None);
+                }
+            }
+            ParserState::InSysEx => {
+                // Inside SysEx - ignore all bytes until 0xF7
+                // Note: SysEx start (0xF0) and end (0xF7) are handled below
+                return Ok(None);
+            }
+            ParserState::Reading => {
+                // Normal parsing mode - continue below
             }
         }
 
@@ -165,24 +230,19 @@ impl MidiParser {
 
         // Handle SysEx start (0xF0)
         if byte == 0xF0 {
-            self.in_sysex = true;
             // Reset parser state including timestamp - intentional, as we're discarding
             // any partial message and entering SysEx mode
             self.clear();
+            self.state = ParserState::InSysEx;
             return Ok(None); // Ignore SysEx, don't forward
         }
 
         // Handle SysEx end (0xF7)
         if byte == 0xF7 {
-            self.in_sysex = false;
             // Reset parser state including timestamp - ready for next normal message
             self.clear();
+            self.state = ParserState::Reading;
             return Ok(None); // Ignore SysEx, don't forward
-        }
-
-        // Ignore all bytes while inside SysEx
-        if self.in_sysex {
-            return Ok(None);
         }
 
         if (byte & 0x80) == 0x80 {
@@ -190,12 +250,14 @@ impl MidiParser {
             // Undefined status bytes: 0xF4, 0xF5, 0xF9-0xFD
             if byte == 0xF4 || byte == 0xF5 || (0xF9..=0xFD).contains(&byte) {
                 self.clear();
+                self.state = ParserState::Resyncing;
                 return Err(MidiMessageError::InvalidStatusByte);
             }
 
             if self.status.push(byte).is_err() {
                 // We already have an active status, raise error
                 self.clear();
+                self.state = ParserState::Resyncing;
                 return Err(MidiMessageError::DuplicateStatus);
             };
 
@@ -218,6 +280,7 @@ impl MidiParser {
             if self.data.push(byte).is_err() {
                 // We got more data bytes than expected, raise error
                 self.clear();
+                self.state = ParserState::Resyncing;
                 return Err(MidiMessageError::UnexpectedDataByte);
             }
         }
