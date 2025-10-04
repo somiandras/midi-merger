@@ -152,6 +152,7 @@ impl MidiParser {
             // status byte
             if self.status.push(byte).is_err() {
                 // We already have an active status, raise error
+                self.clear();
                 return Err(MidiMessageError::DuplicateStatus);
             };
 
@@ -173,6 +174,7 @@ impl MidiParser {
             // data byte
             if self.data.push(byte).is_err() {
                 // We got more data bytes than expected, raise error
+                self.clear();
                 return Err(MidiMessageError::UnexpectedDataByte);
             }
         }
