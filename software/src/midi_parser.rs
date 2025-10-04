@@ -45,6 +45,91 @@ pub enum MidiMessageError {
     InvalidStatusByte,
 }
 
+/// A diagnostic entry in the circular buffer
+///
+/// Stores a received byte along with a sequence number for ordering
+#[cfg(debug_assertions)]
+#[derive(Debug, Clone, Copy)]
+struct DiagnosticEntry {
+    byte: u8,
+    sequence: u32,
+}
+
+/// Fixed-size circular buffer for diagnostic purposes
+///
+/// Stores the last N bytes received by the parser to aid in debugging
+/// parser errors. Uses a simple ring buffer with sequence numbers.
+///
+/// This buffer is only compiled in debug builds to avoid wasting RAM
+/// in release builds where diagnostic logging is disabled.
+#[cfg(debug_assertions)]
+#[derive(Debug)]
+struct DiagnosticBuffer<const N: usize> {
+    buffer: [DiagnosticEntry; N],
+    head: usize,
+    sequence: u32,
+}
+
+#[cfg(debug_assertions)]
+impl<const N: usize> DiagnosticBuffer<N> {
+    const fn new() -> Self {
+        Self {
+            buffer: [DiagnosticEntry {
+                byte: 0,
+                sequence: 0,
+            }; N],
+            head: 0,
+            sequence: 0,
+        }
+    }
+
+    fn push(&mut self, byte: u8) {
+        self.buffer[self.head] = DiagnosticEntry {
+            byte,
+            sequence: self.sequence,
+        };
+        self.head = (self.head + 1) % N;
+        self.sequence = self.sequence.wrapping_add(1);
+    }
+
+    /// Log the buffer contents in chronological order
+    fn log(&self) {
+        // Find the oldest entry (the one after head, or 0 if we haven't wrapped)
+        let oldest_idx = if (self.sequence as usize) < N {
+            0
+        } else {
+            self.head
+        };
+
+        defmt::debug!("Last {} bytes received (chronological order):", N);
+
+        let count = core::cmp::min(self.sequence as usize, N);
+        for i in 0..count {
+            let idx = (oldest_idx + i) % N;
+            let entry = self.buffer[idx];
+            defmt::debug!("  seq={}: {:#04x}", entry.sequence, entry.byte);
+        }
+    }
+}
+
+/// No-op diagnostic buffer for release builds
+#[cfg(not(debug_assertions))]
+#[derive(Debug)]
+struct DiagnosticBuffer<const N: usize>;
+
+#[cfg(not(debug_assertions))]
+impl<const N: usize> DiagnosticBuffer<N> {
+    const fn new() -> Self {
+        Self
+    }
+
+    #[inline(always)]
+    fn push(&mut self, _byte: u8) {}
+
+    #[inline(always)]
+    fn log(&self) {}
+}
+
 impl MidiMessage {
     fn from_status_and_data(
         status_byte: &Vec<u8, 1>,
@@ -99,6 +184,10 @@ impl Format for MidiMessage {
 ///
 /// After errors, the parser enters resync mode where it discards all bytes until
 /// a valid status byte is found, allowing recovery from corrupted byte streams.
+///
+/// The parser includes a diagnostic buffer that stores the last 32 bytes received
+/// for debugging purposes. This buffer is logged when errors occur to help diagnose
+/// what byte sequence led to the error.
 #[derive(Debug)]
 pub struct MidiParser {
     status: Vec<u8, 1>,
@@ -106,6 +195,7 @@ pub struct MidiParser {
     expected_data_bytes: usize,
     state: ParserState,
     last_byte_time: Option<Instant>,
+    diagnostic_buffer: DiagnosticBuffer<32>,
 }
 
 impl Default for MidiParser {
@@ -116,6 +206,7 @@ impl Default for MidiParser {
             expected_data_bytes: 2,
             state: ParserState::Reading,
             last_byte_time: None,
+            diagnostic_buffer: DiagnosticBuffer::new(),
         }
     }
 }
@@ -155,6 +246,9 @@ impl MidiParser {
     }
 
     pub fn feed_byte(&mut self, byte: u8) -> Result<Option<MidiMessage>, MidiMessageError> {
+        // Add byte to diagnostic buffer before any processing
+        self.diagnostic_buffer.push(byte);
+
         // SystemRealtime messages (0xF8-0xFF) can interrupt any message without affecting
         // parser state. They are processed immediately even during resync mode, and do NOT
         // update the timestamp, ensuring the timeout only measures time between actual
@@ -162,6 +256,8 @@ impl MidiParser {
         if (0xF8..=0xFF).contains(&byte) {
             // Validate it's a defined SystemRealtime byte (not 0xF9 or 0xFD)
             if byte == 0xF9 || byte == 0xFD {
+                defmt::error!("Invalid SystemRealtime byte {:#04x}", byte);
+                self.diagnostic_buffer.log();
                 self.clear();
                 self.state = ParserState::Resyncing;
                 return Err(MidiMessageError::InvalidStatusByte);
@@ -178,9 +274,10 @@ impl MidiParser {
         // is checked (correct behavior - we need at least one byte to start timing).
         if let Some(last_time) = self.last_byte_time {
             if last_time.elapsed() > Duration::from_millis(Self::MIDI_BYTE_TIMEOUT_MS) {
+                defmt::warn!("MIDI message timeout - entering resync mode");
+                self.diagnostic_buffer.log();
                 self.clear();
                 self.state = ParserState::Resyncing;
-                defmt::warn!("MIDI message timeout - entering resync mode");
             }
         }
 
@@ -249,6 +346,8 @@ impl MidiParser {
             // status byte - validate it's in legal range
             // Undefined status bytes: 0xF4, 0xF5, 0xF9-0xFD
             if byte == 0xF4 || byte == 0xF5 || (0xF9..=0xFD).contains(&byte) {
+                defmt::error!("Invalid status byte {:#04x}", byte);
+                self.diagnostic_buffer.log();
                 self.clear();
                 self.state = ParserState::Resyncing;
                 return Err(MidiMessageError::InvalidStatusByte);
@@ -256,6 +355,8 @@ impl MidiParser {
 
             if self.status.push(byte).is_err() {
                 // We already have an active status, raise error
+                defmt::error!("Duplicate status byte {:#04x}", byte);
+                self.diagnostic_buffer.log();
                 self.clear();
                 self.state = ParserState::Resyncing;
                 return Err(MidiMessageError::DuplicateStatus);
@@ -279,6 +380,8 @@ impl MidiParser {
             // data byte - bit 7 is guaranteed to be 0 by the if/else structure
             if self.data.push(byte).is_err() {
                 // We got more data bytes than expected, raise error
+                defmt::error!("Unexpected data byte {:#04x}", byte);
+                self.diagnostic_buffer.log();
                 self.clear();
                 self.state = ParserState::Resyncing;
                 return Err(MidiMessageError::UnexpectedDataByte);
