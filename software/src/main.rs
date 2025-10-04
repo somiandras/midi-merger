@@ -183,6 +183,9 @@ async fn read_from_uart(usart: BufferedUartRx<'static, impl Instance>, uart_chan
                             MidiMessageError::UnknownStatus => {
                                 defmt::error!("Unknown status byte");
                             }
+                            MidiMessageError::InvalidStatusByte => {
+                                defmt::error!("Invalid/undefined status byte");
+                            }
                         }
                     }
                 }

@@ -27,6 +27,8 @@ pub enum MidiMessageError {
     DuplicateStatus,
     /// Received more data bytes than expected for the current message type
     UnexpectedDataByte,
+    /// Received an undefined status byte (0xF4, 0xF5, 0xF9-0xFD)
+    InvalidStatusByte,
 }
 
 impl MidiMessage {
@@ -123,6 +125,12 @@ impl MidiParser {
     pub fn feed_byte(&mut self, byte: u8) -> Result<Option<MidiMessage>, MidiMessageError> {
         // SystemRealtime messages can interrupt anything, including SysEx
         if (0xF8..=0xFF).contains(&byte) {
+            // Validate it's a defined SystemRealtime byte (not 0xF9 or 0xFD)
+            if byte == 0xF9 || byte == 0xFD {
+                self.clear();
+                return Err(MidiMessageError::InvalidStatusByte);
+            }
+
             let status_byte = Vec::from_slice(&[byte]).unwrap();
             let empty_data: Vec<u8, 2> = Vec::new();
             let message = MidiMessage::from_status_and_data(&status_byte, &empty_data)?;
@@ -149,7 +157,13 @@ impl MidiParser {
         }
 
         if (byte & 0x80) == 0x80 {
-            // status byte
+            // status byte - validate it's in legal range
+            // Undefined status bytes: 0xF4, 0xF5, 0xF9-0xFD
+            if byte == 0xF4 || byte == 0xF5 || (0xF9..=0xFD).contains(&byte) {
+                self.clear();
+                return Err(MidiMessageError::InvalidStatusByte);
+            }
+
             if self.status.push(byte).is_err() {
                 // We already have an active status, raise error
                 self.clear();
@@ -171,7 +185,7 @@ impl MidiParser {
                 self.expected_data_bytes = 2;
             }
         } else {
-            // data byte
+            // data byte - bit 7 is guaranteed to be 0 by the if/else structure
             if self.data.push(byte).is_err() {
                 // We got more data bytes than expected, raise error
                 self.clear();
