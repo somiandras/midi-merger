@@ -15,6 +15,7 @@ pub enum UartMidiError {
     MessageError(MidiMessageError),
 }
 
+#[derive(Debug)]
 pub struct UartMidiMessage {
     // Wraps MidiMessage to record the UART channel where the message comes from
     pub message: MidiMessage,
