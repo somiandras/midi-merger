@@ -1,4 +1,5 @@
 use defmt::{write, Format};
+use embassy_time::{Duration, Instant};
 use heapless::Vec;
 
 /// A parsed MIDI message with its associated data bytes
@@ -87,6 +88,7 @@ pub struct MidiParser {
     data: Vec<u8, 2>,
     expected_data_bytes: usize,
     in_sysex: bool,
+    last_byte_time: Option<Instant>,
 }
 
 impl Default for MidiParser {
@@ -96,11 +98,20 @@ impl Default for MidiParser {
             data: Default::default(),
             expected_data_bytes: 2,
             in_sysex: false,
+            last_byte_time: None,
         }
     }
 }
 
 impl MidiParser {
+    /// Maximum time between MIDI bytes before parser resets (in milliseconds)
+    ///
+    /// MIDI bytes at 31,250 baud arrive in ~0.32ms each. A complete 3-byte message
+    /// (status + 2 data bytes) transmits in ~0.96ms at most. This generous 300ms
+    /// timeout allows for device processing delays while protecting against stuck
+    /// parser state from hardware glitches, cable disconnects, or electrical noise.
+    const MIDI_BYTE_TIMEOUT_MS: u64 = 300;
+
     fn clear(&mut self) {
         *self = Self::default();
     }
@@ -123,7 +134,9 @@ impl MidiParser {
     }
 
     pub fn feed_byte(&mut self, byte: u8) -> Result<Option<MidiMessage>, MidiMessageError> {
-        // SystemRealtime messages can interrupt anything, including SysEx
+        // SystemRealtime messages (0xF8-0xFF) can interrupt any message without affecting
+        // parser state. They are processed immediately and do NOT update the timestamp,
+        // ensuring the timeout only measures time between actual message bytes (status/data).
         if (0xF8..=0xFF).contains(&byte) {
             // Validate it's a defined SystemRealtime byte (not 0xF9 or 0xFD)
             if byte == 0xF9 || byte == 0xFD {
@@ -137,9 +150,24 @@ impl MidiParser {
             return Ok(Some(message));
         }
 
+        // Check if too much time elapsed since last byte (message timeout)
+        // On the first byte after startup/reset, last_byte_time is None, so no timeout
+        // is checked (correct behavior - we need at least one byte to start timing).
+        if let Some(last_time) = self.last_byte_time {
+            if last_time.elapsed() > Duration::from_millis(Self::MIDI_BYTE_TIMEOUT_MS) {
+                self.clear();
+                defmt::warn!("MIDI message timeout - resetting parser");
+            }
+        }
+
+        // Update timestamp for this byte
+        self.last_byte_time = Some(Instant::now());
+
         // Handle SysEx start (0xF0)
         if byte == 0xF0 {
             self.in_sysex = true;
+            // Reset parser state including timestamp - intentional, as we're discarding
+            // any partial message and entering SysEx mode
             self.clear();
             return Ok(None); // Ignore SysEx, don't forward
         }
@@ -147,6 +175,7 @@ impl MidiParser {
         // Handle SysEx end (0xF7)
         if byte == 0xF7 {
             self.in_sysex = false;
+            // Reset parser state including timestamp - ready for next normal message
             self.clear();
             return Ok(None); // Ignore SysEx, don't forward
         }
