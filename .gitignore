@@ -46,3 +46,4 @@ poetry.lock
 
 # Project management files
 project_mgmt/
+.kata.local.toml
