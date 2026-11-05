@@ -15,7 +15,7 @@ cargo run
 
 # Build and flash release version with error-only logging
 cd software
-./build_release.sh
+./flash_release.sh
 # Or manually:
 DEFMT_LOG=error cargo run --release
 ```
