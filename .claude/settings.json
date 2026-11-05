@@ -1,0 +1,42 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "'/Users/somiandras/Documents/KiCad/10.0/3rdparty/plugins/com_github_mixelpixx_konnect/bin/konnect' hook 'pre-pcb-ipc'",
+            "type": "command"
+          }
+        ],
+        "matcher": "mcp__konnect__(add_via|align_components|apply_specctra_ses|delete_component|delete_trace|duplicate_component|edit_board_footprint_graphic|edit_component|find_component|get_board_stackup|get_component_list|get_nets_list|list_board_footprint_graphics|modify_trace|place_component_array|plan_specctra_ses_import|query_traces|repair_corrupted_footprints|route_differential_pair|route_pad_to_pad|route_trace|set_placed_footprint_models|update_footprints_from_library|update_pcb_from_schematic)"
+      },
+      {
+        "hooks": [
+          {
+            "command": "'/Users/somiandras/Documents/KiCad/10.0/3rdparty/plugins/com_github_mixelpixx_konnect/bin/konnect' hook 'pre-pcb-fallback'",
+            "type": "command"
+          }
+        ],
+        "matcher": "mcp__konnect__(add_board_outline|add_board_text|add_copper_pour|add_mounting_hole|add_zone|delete_graphics|flip_component|get_component_pads|get_layer_list|get_netclasses|get_pad_position|import_svg_logo|move_component|place_component|rotate_component|set_board_size|set_component_placements)"
+      },
+      {
+        "hooks": [
+          {
+            "command": "'/Users/somiandras/Documents/KiCad/10.0/3rdparty/plugins/com_github_mixelpixx_konnect/bin/konnect' hook 'pre-pcb-closed'",
+            "type": "command"
+          }
+        ],
+        "matcher": "mcp__konnect__(add_layer)"
+      },
+      {
+        "hooks": [
+          {
+            "command": "'/Users/somiandras/Documents/KiCad/10.0/3rdparty/plugins/com_github_mixelpixx_konnect/bin/konnect' hook 'pre-pcb-conditional'",
+            "type": "command"
+          }
+        ],
+        "matcher": "mcp__konnect__(auto_place_from_schematic|place_decoupling_caps|plan_bga_fanout|refine_placement_force_directed)"
+      }
+    ]
+  }
+}
