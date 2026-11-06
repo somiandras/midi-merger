@@ -1,0 +1,12 @@
+#!/bin/bash
+# Rust checks run only when the commit stages files under software/.
+set -euo pipefail
+
+if ! git diff --cached --name-only --diff-filter=ACMR | grep -q '^software/'; then
+    exit 0
+fi
+
+# rustup picks the toolchain from software/rust-toolchain.toml when run inside software/.
+cd "$(git rev-parse --show-toplevel)/software"
+cargo fmt --check
+cargo clippy --target thumbv6m-none-eabi -- -D warnings

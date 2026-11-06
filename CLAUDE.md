@@ -18,7 +18,12 @@ cd software
 ./flash_release.sh
 # Or manually:
 DEFMT_LOG=error cargo run --release
+
+# One-time setup per clone: use the tracked git hooks
+git config core.hooksPath .githooks
 ```
+
+The pre-commit hook runs `cargo fmt --check` and `cargo clippy` only when the commit stages files under `software/`.
 
 The target is configured in `.cargo/config.toml` as `thumbv6m-none-eabi` with `probe-rs` as the runner.
 
