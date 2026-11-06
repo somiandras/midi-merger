@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Embedded Rust project for a 2-in, 4-out MIDI merge box running on Raspberry Pi Pico (RP2040). Uses Embassy async framework for concurrent UART handling.
+Embedded Rust project for a 2-in, 5-out MIDI merge box running on Raspberry Pi Pico (RP2040). Uses Embassy async framework for concurrent UART handling.
 
 ## Build & Run Commands
 

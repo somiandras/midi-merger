@@ -21,11 +21,13 @@ target/
 # Backup files
 *.bak
 *.sch-bak
+*.kicad_sch-bak
+*-backups/
 *.lck
 
 # Cache files
 *-cache.lib
-*-fp-info-cache
+fp-info-cache
 
 # Temporary files
 *.tmp
@@ -46,3 +48,4 @@ poetry.lock
 
 # Project management files
 project_mgmt/
+.kata.local.toml

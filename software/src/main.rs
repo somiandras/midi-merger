@@ -64,13 +64,13 @@ static CHANNEL: Channel<ThreadModeRawMutex, ChannelMessage, 64> = Channel::new()
 //
 // Memory usage: 256 bytes × 3 buffers = 768 bytes total (0.3% of 264KB RAM)
 
-// UART0 RX buffer: Receives MIDI from input 1
+// UART0 RX buffer: Receives MIDI from input 2 (J2)
 static mut UART0_RX_BUF: [u8; 256] = [0u8; 256];
 
 // UART0 TX buffer: Sends merged MIDI output
 static mut UART0_TX_BUF: [u8; 256] = [0u8; 256];
 
-// UART1 RX buffer: Receives MIDI from input 2
+// UART1 RX buffer: Receives MIDI from input 1 (J1)
 static mut UART1_RX_BUF: [u8; 256] = [0u8; 256];
 
 #[derive(Debug, Default)]
@@ -314,7 +314,7 @@ async fn main(spawner: Spawner) {
     let mut uart_config = Config::default();
     uart_config.baudrate = 31250;
 
-    // UART0: Bidirectional (receives input 1, transmits merged output)
+    // UART0: Bidirectional (receives input 2, transmits merged output)
     // Uses BufferedUart for efficient interrupt-driven I/O with background buffering
     //
     // How BufferedUart works:
@@ -329,8 +329,8 @@ async fn main(spawner: Spawner) {
     let usart0 = BufferedUart::new(
         peripherals.UART0,  // Hardware peripheral
         Irqs,               // Interrupt bindings
-        peripherals.PIN_12, // TX pin (output to MIDI OUT)
-        peripherals.PIN_13, // RX pin (input from MIDI IN 1)
+        peripherals.PIN_16, // TX pin (GP16, output to MIDI OUT J5-J9)
+        peripherals.PIN_17, // RX pin (GP17, input from MIDI IN 2, J2)
         // Safe: Each static buffer is used by only one UART instance
         // Using addr_of_mut!() to avoid direct mutable static reference
         unsafe { &mut *core::ptr::addr_of_mut!(UART0_TX_BUF) }, // TX buffer for outgoing data
@@ -342,13 +342,13 @@ async fn main(spawner: Spawner) {
     // This allows independent operation: one task writes, another reads
     let (usart0_tx, usart0_rx) = usart0.split();
 
-    // UART1: Receive-only (input 2)
+    // UART1: Receive-only (input 1)
     // We only need RX for this input, so we create a BufferedUartRx directly
     // instead of creating a full BufferedUart and splitting it
     let usart1_rx = BufferedUartRx::new(
         peripherals.UART1, // Hardware peripheral
         Irqs,              // Interrupt bindings
-        peripherals.PIN_5, // RX pin (input from MIDI IN 2)
+        peripherals.PIN_5, // RX pin (GP5, input from MIDI IN 1, J1)
         // Safe: Each static buffer is used by only one UART instance
         // Using addr_of_mut!() to avoid direct mutable static reference
         unsafe { &mut *core::ptr::addr_of_mut!(UART1_RX_BUF) }, // RX buffer for incoming data
