@@ -18,14 +18,14 @@ Exit codes: 0 no hard violations, 1 hard violations, 2 input error.
 import argparse
 import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
 from board_io import BoardIOError, open_board, read_board
-from board_model import BoardData
+from board_model import BoardData, Pose
 from constraints import Placement, PlacementFileError, load_placement
 from scoring import Score, score
 from validate import check
@@ -182,6 +182,64 @@ def _text(data: dict[str, Json]) -> str:
     return "\n".join(lines)
 
 
+def state_dir(placement_path: Path) -> Path:
+    """The .placement folder next to placement.yaml."""
+    return placement_path.resolve().parent / STATE_DIR
+
+
+def fit_problems(board: BoardData, placement: Placement, placement_path: Path) -> bool:
+    """Print `validate.check` errors to stderr; True when there were any."""
+    problems = check(board, placement)
+    if problems:
+        print(f"error: {placement_path} does not fit the board (run validate.py):", file=sys.stderr)
+        for p in problems:
+            print(f"  {p.line()}", file=sys.stderr)
+    return bool(problems)
+
+
+def measure(
+    board: BoardData,
+    placement: Placement,
+    placement_path: Path,
+    *,
+    baseline: bool = False,
+    full: bool = False,
+    history: bool = True,
+    poses: Mapping[str, Pose] | None = None,
+) -> tuple[Score, dict[str, Json]]:
+    """Score the board (footprints at `poses` where given), update the .placement state and
+    return the score and its report.
+
+    `history` appends one line to history.jsonl; `baseline` stores this cost as the reference.
+    Raises OSError or ValidationError when the state files cannot be written or read.
+    """
+    result = score(board, placement, poses)
+    state = state_dir(placement_path)
+    baseline_path = state / BASELINE_FILE
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    state.mkdir(exist_ok=True)
+    if baseline:
+        baseline_path.write_text(Baseline(ts=now, cost=result.cost, hard_violations=result.terms.hard_violations).model_dump_json() + "\n")
+    baseline_cost = Baseline.model_validate_json(baseline_path.read_text()).cost if baseline_path.exists() else None
+    if history:
+        line = {
+            "ts": now,
+            "board": board.path,
+            "cost": round(result.cost, 3),
+            "hard_violations": result.terms.hard_violations,
+            "hpwl_mm": round(result.soft.hpwl_mm, 3),
+            "crossings": result.soft.crossings,
+            "baseline": baseline,
+        }
+        with (state / HISTORY_FILE).open("a") as fh:
+            fh.write(json.dumps(line) + "\n")
+    return result, report(board, placement, result, baseline_cost, full)
+
+
+def render(data: dict[str, Json], as_json: bool) -> str:
+    return json.dumps(data, separators=(",", ":")) if as_json else _text(data)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("board", type=Path, help="path of the .kicad_pcb open in KiCad")
@@ -198,39 +256,14 @@ def main() -> int:
     except (PlacementFileError, BoardIOError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    problems = check(board, placement)
-    if problems:
-        print(f"error: {args.placement} does not fit the board (run validate.py):", file=sys.stderr)
-        for p in problems:
-            print(f"  {p.line()}", file=sys.stderr)
+    if fit_problems(board, placement, args.placement):
         return 2
-    result = score(board, placement)
-
-    state = args.placement.resolve().parent / STATE_DIR
-    baseline_path = state / BASELINE_FILE
-    now = datetime.now(UTC).isoformat(timespec="seconds")
     try:
-        state.mkdir(exist_ok=True)
-        if args.baseline:
-            baseline_path.write_text(Baseline(ts=now, cost=result.cost, hard_violations=result.terms.hard_violations).model_dump_json() + "\n")
-        baseline_cost = Baseline.model_validate_json(baseline_path.read_text()).cost if baseline_path.exists() else None
-        history = {
-            "ts": now,
-            "board": board.path,
-            "cost": round(result.cost, 3),
-            "hard_violations": result.terms.hard_violations,
-            "hpwl_mm": round(result.soft.hpwl_mm, 3),
-            "crossings": result.soft.crossings,
-            "baseline": args.baseline,
-        }
-        with (state / HISTORY_FILE).open("a") as fh:
-            fh.write(json.dumps(history) + "\n")
+        result, data = measure(board, placement, args.placement, baseline=args.baseline, full=args.full)
     except (OSError, ValidationError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-
-    data = report(board, placement, result, baseline_cost, args.full)
-    print(json.dumps(data, separators=(",", ":")) if args.json else _text(data))
+    print(render(data, args.json))
     return exit_code(result)
 
 

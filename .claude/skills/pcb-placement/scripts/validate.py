@@ -22,8 +22,9 @@ from shapely.geometry import Point as ShapelyPoint
 from shapely.geometry import Polygon
 
 from board_io import BoardIOError, open_board, read_board
-from board_model import BoardData, Pose
-from constraints import DecouplingPair, Placement, PlacementFileError, Problem, load_placement
+from board_model import BoardData, FootprintData, Pose
+from constraints import DecouplingPair, Group, Placement, PlacementFileError, Problem, load_placement
+from recipes import Recipe, RecipeError, load_recipe
 from scoring import courtyard_overlaps, find_pins
 
 RECIPE_DIR = Path(__file__).resolve().parent.parent / "reference" / "block-recipes"
@@ -133,8 +134,36 @@ def check(board: BoardData, placement: Placement) -> list[Problem]:
     return problems
 
 
-def check_recipes(placement: Placement, recipe_dir: Path) -> list[Problem]:
-    """Every group `recipe:` needs a file <recipe>.md in `recipe_dir` (only warned if the dir is missing)."""
+def _recipe_fit(at: str, group: Group, recipe: Recipe, footprints: dict[str, FootprintData]) -> list[Problem]:
+    """Problems mapping `recipe`'s roles onto `group`'s members."""
+    problems: list[Problem] = []
+    if group.anchor is None:
+        problems.append(Problem(path=f"{at}.anchor", message=f"a group with a recipe needs an anchor (recipe role {recipe.anchor})"))
+    refs = dict(group.roles)
+    if recipe.anchor in refs and refs[recipe.anchor] != group.anchor:
+        problems.append(Problem(path=f"{at}.roles.{recipe.anchor}", message=f"{recipe.anchor} is the recipe anchor role, which maps to the group anchor {group.anchor}"))
+    if group.anchor is not None:
+        refs[recipe.anchor] = group.anchor
+    for role in sorted(group.roles):
+        if role != recipe.anchor and role not in recipe.parts:
+            problems.append(Problem(path=f"{at}.roles.{role}", message=f"recipe {group.recipe} has no role {role}"))
+    for role in recipe.order():
+        if role not in refs:
+            problems.append(Problem(path=f"{at}.roles", message=f"recipe role {role} is not mapped; the recipe does not place it", level="warning"))
+            continue
+        part = recipe.parts[role]
+        rel_ref = refs.get(part.rel_role)
+        if part.rel_pin is not None and rel_ref in footprints and not find_pins(footprints[rel_ref], part.rel_pin):
+            problems.append(Problem(path=f"{at}.recipe", message=f"recipe part {role} is relative to {part.rel_to}, but {rel_ref} has no pad or pin {part.rel_pin}"))
+    return problems
+
+
+def check_recipes(board: BoardData, placement: Placement, recipe_dir: Path) -> list[Problem]:
+    """Every group `recipe:` must parse from <recipe>.md in `recipe_dir` and fit the group's roles.
+
+    Only a warning while `recipe_dir` does not exist.
+    """
+    footprints = {fp.ref: fp for fp in board.footprints}
     problems: list[Problem] = []
     for i, group in enumerate(placement.groups):
         if group.recipe is None:
@@ -142,8 +171,13 @@ def check_recipes(placement: Placement, recipe_dir: Path) -> list[Problem]:
         path = f"groups[{i}].recipe"
         if not recipe_dir.is_dir():
             problems.append(Problem(path=path, message=f"recipe {group.recipe} not checked: {recipe_dir} does not exist", level="warning"))
-        elif not (recipe_dir / f"{group.recipe}.md").is_file():
-            problems.append(Problem(path=path, message=f"no recipe file {group.recipe}.md in {recipe_dir}"))
+            continue
+        try:
+            recipe = load_recipe(recipe_dir / f"{group.recipe}.md")
+        except RecipeError as exc:
+            problems.append(Problem(path=path, message=str(exc)))
+            continue
+        problems += _recipe_fit(f"groups[{i}]", group, recipe, footprints)
     return problems
 
 
@@ -157,7 +191,8 @@ def main() -> int:
 
     try:
         placement = load_placement(args.placement)
-        problems = check(read_board(open_board(args.board, args.socket)), placement) + check_recipes(placement, RECIPE_DIR)
+        board = read_board(open_board(args.board, args.socket))
+        problems = check(board, placement) + check_recipes(board, placement, RECIPE_DIR)
     except PlacementFileError as exc:
         if not exc.problems:
             print(f"error: {exc}", file=sys.stderr)

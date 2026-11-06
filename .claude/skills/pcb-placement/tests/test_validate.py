@@ -136,16 +136,39 @@ def test_fixed_part_may_also_be_a_group_member(tmp_path: Path) -> None:
     assert problems_for(text, tmp_path) == []
 
 
-def test_recipes(tmp_path: Path) -> None:
-    p = Placement.model_validate({"groups": [{"name": "buck", "recipe": "buck", "members": ["U1"]}, {"name": "x", "members": ["R1"]}]})
-    missing_dir = check_recipes(p, tmp_path / "block-recipes")
-    assert [(q.path, q.level) for q in missing_dir] == [("groups[0].recipe", "warning")]
+PAIR_RECIPE = Path(__file__).resolve().parent / "block-recipes" / "pair.md"
 
+
+def recipe_problems(group: dict[str, object], recipe_dir: Path) -> list[tuple[str, str]]:
+    p = Placement.model_validate({"groups": [group, {"name": "x", "members": ["R2"]}]})
+    return [(q.path, q.level) for q in check_recipes(sample_board(), p, recipe_dir)]
+
+
+def test_recipes(tmp_path: Path) -> None:
+    group: dict[str, object] = {"name": "blk", "recipe": "pair", "anchor": "U1", "roles": {"C": "C1", "R": "R1"}, "members": ["U1", "C1", "R1"]}
     recipes = tmp_path / "block-recipes"
+    assert recipe_problems(group, recipes) == [("groups[0].recipe", "warning")]
     recipes.mkdir()
-    assert [(q.path, q.level) for q in check_recipes(p, recipes)] == [("groups[0].recipe", "error")]
-    (recipes / "buck.md").write_text("anchor: U\n")
-    assert check_recipes(p, recipes) == []
+    assert recipe_problems(group, recipes) == [("groups[0].recipe", "error")]
+    (recipes / "pair.md").write_text("anchor: U\n")
+    assert recipe_problems(group, recipes) == [("groups[0].recipe", "error")]
+    (recipes / "pair.md").write_text(PAIR_RECIPE.read_text())
+    assert recipe_problems(group, recipes) == []
+
+
+@pytest.mark.parametrize(
+    ("change", "expected"),
+    [
+        ({"anchor": None}, [("groups[0].anchor", "error")]),
+        ({"roles": {"C": "C1", "R": "R1", "X": "R1"}}, [("groups[0].roles.X", "error")]),
+        ({"roles": {"C": "C1", "R": "R1", "U": "C1"}}, [("groups[0].roles.U", "error")]),
+        ({"roles": {"C": "C1"}}, [("groups[0].roles", "warning")]),
+        ({"anchor": "H1", "members": ["H1", "C1", "R1"]}, [("groups[0].recipe", "error")]),
+    ],
+)
+def test_recipe_roles_must_fit_the_group(change: dict[str, object], expected: list[tuple[str, str]]) -> None:
+    group: dict[str, object] = {"name": "blk", "recipe": "pair", "anchor": "U1", "roles": {"C": "C1", "R": "R1"}, "members": ["U1", "C1", "R1"]}
+    assert recipe_problems({**group, **change}, PAIR_RECIPE.parent) == expected
 
 
 def test_template_fits_the_schema_and_fails_only_on_example_names() -> None:

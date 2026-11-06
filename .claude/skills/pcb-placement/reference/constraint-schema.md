@@ -19,7 +19,7 @@ constraint off.
 | `outline` | `edge_cuts` | `edge_cuts` | Outline source; only Edge.Cuts is supported |
 | `grid_mm` | number > 0 | `0.25` | Placer position grid |
 | `edge_clearance_mm` | number >= 0 | `0.5` | Minimum courtyard-to-outline gap (hard) |
-| `sides` | list of `top`/`bottom`, at least one | `[top]` | Sides the placer may use |
+| `sides` | list of `top`/`bottom`, at least one | `[top]` | Sides the placer may use: it moves parts already on these sides and never flips a part; parts on other sides stay put |
 
 ### `fixed` (hard)
 
@@ -55,7 +55,7 @@ List of parts placed together. A part may be in at most one group.
 | `members` | list of refs, at least one | required | Parts in the group |
 | `region` | region name | none | Hard: every member's courtyard fully inside this region |
 | `anchor` | ref | none | Member that recipe offsets are relative to |
-| `recipe` | text | none | Block recipe `reference/block-recipes/<recipe>.md` |
+| `recipe` | text | none | Block recipe `reference/block-recipes/<recipe>.md` (see Block recipes below); needs `anchor` |
 | `roles` | map role -> ref | `{}` | Maps recipe role names to members |
 
 Example: `{name: buck_3v3, region: power, anchor: U2, recipe: buck, roles: {CIN: C5, L: L1}, members: [U2, L1, C5]}`
@@ -158,4 +158,41 @@ only once the schema is valid. `metrics.py` refuses (exit 2) a file with any of 
 | Fixed part whose courtyard, at its fixed pose, overlaps another fixed or KiCad-locked part | `fixed.J1` |
 | Separation name that is neither a group nor a region, or both | `separation[0].b` |
 | Critical net not on the board | `critical_nets[0].net` |
-| Recipe with no file in `reference/block-recipes/` (a warning only while that folder does not exist) | `groups[0].recipe` |
+| Recipe with no file in `reference/block-recipes/` (a warning only while that folder does not exist), or a file that does not parse | `groups[0].recipe` |
+| Group with a recipe but no `anchor`; role not in the recipe; recipe anchor role mapped to a ref other than `anchor` | `groups[0].anchor`, `groups[0].roles.X` |
+| Recipe part relative to a pin its mapped part does not have | `groups[0].recipe` |
+| Recipe role not mapped in `roles` (warning: the recipe does not place that part) | `groups[0].roles` |
+
+`place.py` refuses (exit 2) a file with any of these errors, recipe errors included
+(`metrics.py` does not read recipes).
+
+## Block recipes
+
+`reference/block-recipes/<name>.md` transcribes a datasheet's recommended layout as offsets
+from the group's anchor. The file is free markdown with exactly one ```` ```yaml ```` fenced
+block (model: `scripts/recipes.py`):
+
+```yaml
+anchor: U                                    # recipe role of the anchor part
+parts:                                       # role -> where it goes
+  CIN:  {rel_to: U.VIN, dx: 0.0, dy: 1.2, rot: 0}
+  L:    {rel_to: U.SW,  dx: 2.5, dy: 0.0, rot: 90}
+  COUT: {rel_to: L.2,   dx: 2.0, dy: 0.0, rot: 0}
+bbox_mm: [8, 6]                              # optional block size, anchor at rotation 0
+```
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `anchor` | text | Role name of the anchor; maps to the group's `anchor` ref |
+| `parts.<ROLE>.rel_to` | `ROLE` or `ROLE.PIN` | Reference point: that role's footprint position, or its pin (pad number first, then symbol pin name; first matching pad) |
+| `parts.<ROLE>.dx`, `dy` | number | Offset in mm from the reference point to the part's footprint position, written for the anchor at rotation 0 |
+| `parts.<ROLE>.rot` | multiple of 90 | Part rotation relative to the anchor's rotation (default 0) |
+| `bbox_mm` | `[w, h]`, both > 0 | Size of the block for macro placement; without it the group's size is its members' courtyard area x 1.6 |
+
+The whole block turns with the anchor: a part goes to its reference point plus (dx, dy)
+rotated by the anchor's rotation, at the anchor's rotation plus `rot`. `rel_to` may name the
+anchor or another part, but not form a cycle. In `placement.yaml`, `groups[].roles` maps
+every other role to a member (`roles: {CIN: C5, L: L1}`); the anchor role maps to
+`groups[].anchor`. The placer puts each mapped part at its offset, then moves it to the
+nearest legal spot if that one is taken or outside the region. Members without a role are
+placed near the pins they connect to.

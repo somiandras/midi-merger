@@ -157,12 +157,12 @@ def cost(terms: CostTerms, weights: Weights) -> float:
     )
 
 
-def _matches(name: str, patterns: Sequence[re.Pattern[str]]) -> bool:
+def net_matches(name: str, patterns: Sequence[re.Pattern[str]]) -> bool:
     base = name.rsplit("/", 1)[-1]
     return any(p.fullmatch(base) for p in patterns)
 
 
-def _compile(patterns: Iterable[str]) -> list[re.Pattern[str]]:
+def compile_patterns(patterns: Iterable[str]) -> list[re.Pattern[str]]:
     return [re.compile(p, re.IGNORECASE) for p in patterns]
 
 
@@ -342,7 +342,7 @@ def _decoupling(placed: _Placed, placement: Placement, ground: Sequence[re.Patte
                 continue
             best: tuple[float, str, str] | None = None
             for cp in cap.pads:
-                if not cp.net or not _matches(cp.net, power) or _matches(cp.net, ground):
+                if not cp.net or not net_matches(cp.net, power) or net_matches(cp.net, ground):
                     continue
                 for ic in ics:
                     for ip in ic.pads:
@@ -381,8 +381,8 @@ def _separation(placed: _Placed, placement: Placement) -> list[SeparationViolati
 def score(board: BoardData, placement: Placement, poses: Mapping[str, Pose] | None = None) -> Score:
     """Score `board` with footprints at `poses` (missing refs keep their board pose)."""
     placed = _Placed(board, poses or {})
-    power = _compile(placement.power_nets)
-    ground = _compile(GROUND_NET_PATTERNS)
+    power = compile_patterns(placement.power_nets)
+    ground = compile_patterns(GROUND_NET_PATTERNS)
     critical = {c.net: c.weight for c in placement.critical_nets}
 
     net_points: dict[str, list[Point]] = {}
@@ -391,7 +391,7 @@ def score(board: BoardData, placement: Placement, poses: Mapping[str, Pose] | No
             if pad.net:
                 net_points.setdefault(pad.net, []).append(placed.pad_point(ref, pad))
 
-    signal = {net: pts for net, pts in net_points.items() if not _matches(net, power)}
+    signal = {net: pts for net, pts in net_points.items() if not net_matches(net, power)}
     hpwl: dict[str, float] = {}
     for net, pts in net_points.items():
         if net in signal or net in critical:
