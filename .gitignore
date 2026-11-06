@@ -42,6 +42,7 @@ fp-info-cache
 
 # Local Python files
 scripts/
+!.claude/skills/*/scripts/
 pyproject.toml
 poetry.lock
 .venv/
