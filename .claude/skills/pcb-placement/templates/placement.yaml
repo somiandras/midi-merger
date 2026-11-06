@@ -23,12 +23,12 @@ regions:
 # Parts placed together. Each part belongs to at most one group. With a region, every
 # member's courtyard must lie inside it (hard).
 groups:
-  - name: EX_buck_3v3
+  - name: EX_ldo_3v3
     region: EX_power
     anchor: EX_U2             # recipe offsets are relative to this member
-    recipe: buck              # file reference/block-recipes/buck.md
-    roles: {CIN: EX_C5, L: EX_L1, COUT: EX_C6}   # recipe role -> member ref
-    members: [EX_U2, EX_L1, EX_C5, EX_C6]
+    recipe: ldo               # file reference/block-recipes/ldo.md
+    roles: {CIN: EX_C5, COUT: EX_C6}   # recipe role -> member ref
+    members: [EX_U2, EX_C5, EX_C6, EX_C7]
   - name: EX_mcu_core
     region: EX_core
     anchor: EX_U1

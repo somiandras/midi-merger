@@ -12,6 +12,7 @@ from placer import REFINE_TETHER_MM, Layout, place
 from recipes import Recipe, RecipeError, load_recipe, part_pose
 from scoring import score
 from synthetic import board, part
+from validate import RECIPE_DIR
 
 RECIPES = Path(__file__).resolve().parent / "block-recipes"
 
@@ -132,6 +133,13 @@ def test_recipe_file_parses() -> None:
     assert recipe.anchor == "U"
     assert recipe.order() == ["C", "R"]
     assert recipe.bbox_mm == (10, 8)
+
+
+def test_shipped_recipes_parse() -> None:
+    shipped = sorted(RECIPE_DIR.glob("*.md"))
+    assert {path.stem for path in shipped} >= {"ldo", "crystal", "usb-c"}
+    for path in shipped:
+        assert load_recipe(path).parts, path.name
 
 
 @pytest.mark.parametrize(

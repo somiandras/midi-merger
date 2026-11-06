@@ -22,6 +22,13 @@ No exceptions for "small fixes," "just renaming a net," or "the user said it's f
 If asked to directly edit any of these:
 > KiCAD source files contain UUIDs and cross-references that text edits will break. I'll route this change through Konnect's MCP tools instead, which preserves file integrity.
 
+## Exception: pcb-placement scripts
+
+The `pcb-placement` skill's scripts may move and rotate footprints on a board open in
+KiCad, through KiCad's IPC API (one undoable commit per run). Nothing else: they never
+write any KiCad file, and they change no other property. Use Konnect for DRC after their
+runs, for spot edits and for saving.
+
 ## The Three Channels
 
 ### Channel 1: Konnect MCP (for ALL modifications)

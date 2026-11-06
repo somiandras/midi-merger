@@ -47,6 +47,9 @@ pyproject.toml
 poetry.lock
 .venv/
 
+# pcb-placement per-run files (history.jsonl and baseline.json stay tracked)
+**/.placement/runs/
+
 # Project management files
 project_mgmt/
 .kata.local.toml

@@ -31,6 +31,10 @@ The target is configured in `.cargo/config.toml` as `thumbv6m-none-eabi` with `p
 
 Each piece of work gets its own branch in a git worktree. Create it with the built-in `EnterWorktree` tool, which puts the worktree under `.claude/worktrees/` and moves the session into it; never use `git worktree add` with a path outside the repo. Leave with `ExitWorktree` after the branch is merged.
 
+## Hardware
+
+Use the pcb-placement skill for component placement on the PCB (`hardware/`).
+
 ## Architecture
 
 ### Core Components
