@@ -5635,6 +5635,163 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Regulator_Linear:XC6206PxxxMR"
+			(property "Reference" "U"
+				(at -3.81 3.175 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "XC6206PxxxMR"
+				(at 0 3.175 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" "Package_TO_SOT_SMD:SOT-23-3"
+				(at 0 5.715 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(italic yes)
+					)
+				)
+			)
+			(property "Datasheet" "https://www.torexsemi.com/file/xc6206/XC6206.pdf"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Positive 60-250mA Low Dropout Regulator, Fixed Output, SOT-23"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "Torex LDO Voltage Regulator Fixed Positive"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "SOT?23?3*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(embedded_fonts no)
+			(pin_names
+				(offset 0.254)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(symbol "XC6206PxxxMR_0_1"
+				(rectangle
+					(start -5.08 1.905)
+					(end 5.08 -5.08)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "XC6206PxxxMR_1_1"
+				(pin power_in line
+					(at 0 -7.62 90)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_out line
+					(at 7.62 0 180)
+					(length 2.54)
+					(name "VO"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at -7.62 0 0)
+					(length 2.54)
+					(name "VI"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 	)
 	(junction
 		(at 72.39 157.48)
@@ -5790,10 +5947,6 @@
 	(no_connect
 		(at 55.88 180.34)
 		(uuid "b55cff6c-238f-466e-9d23-bac85b37c5bd")
-	)
-	(no_connect
-		(at 106.68 160.02)
-		(uuid "dd6dfe65-e981-42a9-aaa3-fe14abcd0fdc")
 	)
 	(no_connect
 		(at 231.14 83.82)
@@ -6143,13 +6296,6 @@
 			(xy 86.36 160.02)
 		)
 		(uuid "23d7e993-5d6e-41be-bf53-20fe0b5d6fd5")
-	)
-	(wire
-		(pts
-			(xy 86.36 157.48)
-			(xy 93.98 157.48)
-		)
-		(uuid "f3fd494c-d2bd-40d9-8ef9-bd62b6879039")
 	)
 	(wire
 		(pts
@@ -6739,6 +6885,33 @@
 		)
 		(uuid "ebd9f0e3-92e2-4049-87f3-27d09b7a88e3")
 	)
+	(wire
+		(pts
+			(xy 109.22 160.02)
+			(xy 109.22 157.48)
+		)
+		(uuid "48e77789-0a13-4de9-b759-27ceae1f72fa")
+	)
+	(text "MIDI IN 1/2: 3.5mm TRS Type A (tip = current sink, ring = current source, sleeve not connected). H11L1 Schmitt opto runs from 3V3, no level shifter needed."
+		(at 20.32 25.4 0)
+		(effects
+			(font
+				(size 1.5 1.5)
+			)
+			(justify left bottom)
+		)
+		(uuid "3638c43b-7cfd-4192-86f8-060f9934e5d5")
+	)
+	(text "MIDI OUT 1-5: 3.5mm TRS Type A, 5V drive via 74HCT14\n(U3A inverts UART0_TX, U3B-F drive one output each).\nBoard powered from USB-C VBUS. RP2040 core follows the\n'Hardware design with RP2040' minimal example.\nFirmware pins unchanged: GPIO5 = UART1 RX (IN1),\nGPIO17 = UART0 RX (IN2), GPIO16 = UART0 TX.\nJ4 = Raspberry Pi 3-pin debug connector (SWCLK, GND, SWDIO)."
+		(at 279.4 40.64 0)
+		(effects
+			(font
+				(size 1.5 1.5)
+			)
+			(justify left bottom)
+		)
+		(uuid "d6159f71-0ba4-4664-9aca-b7c87ef33138")
+	)
 	(label "UART0_TX"
 		(at 233.68 124.46 0)
 		(effects
@@ -7089,16 +7262,6 @@
 		)
 		(uuid "aa5e2324-e61a-4c5f-818c-d946ac8ecc2b")
 	)
-  (text "MIDI IN 1/2: 3.5mm TRS Type A (tip = current sink, ring = current source, sleeve not connected). H11L1 Schmitt opto runs from 3V3, no level shifter needed."
-    (at 20.32 25.4 0)
-    (effects (font (size 1.5 1.5)) (justify left bottom))
-    (uuid "3638c43b-7cfd-4192-86f8-060f9934e5d5")
-  )
-  (text "MIDI OUT 1-5: 3.5mm TRS Type A, 5V drive via 74HCT14\n(U3A inverts UART0_TX, U3B-F drive one output each).\nBoard powered from USB-C VBUS. RP2040 core follows the\n'Hardware design with RP2040' minimal example.\nFirmware pins unchanged: GPIO5 = UART1 RX (IN1),\nGPIO17 = UART0 RX (IN2), GPIO16 = UART0 TX.\nJ4 = Raspberry Pi 3-pin debug connector (SWCLK, GND, SWDIO)."
-    (at 279.4 40.64 0)
-    (effects (font (size 1.5 1.5)) (justify left bottom))
-    (uuid "d6159f71-0ba4-4664-9aca-b7c87ef33138")
-  )
 	(symbol
 		(lib_id "Connector_Audio:AudioJack3")
 		(at 30.48 45.72 0)
@@ -7150,15 +7313,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "J1")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "MPN" "PJ-3136-B"
 			(at 30.48 45.72 0)
 			(hide yes)
@@ -7167,7 +7321,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "J1")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 50.8 43.18 90)
@@ -7219,15 +7382,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R1")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 50.8 43.18 0)
 			(hide yes)
@@ -7236,7 +7390,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R1")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Diode:1N4148W")
 		(at 63.5 46.99 270)
@@ -7288,15 +7451,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "D1")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C81598"
 			(at 63.5 46.99 0)
 			(hide yes)
@@ -7305,7 +7459,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "D1")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Isolator:H11L1")
 		(at 86.36 45.72 0)
@@ -7359,15 +7522,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U1")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C20082"
 			(at 86.36 45.72 0)
 			(hide yes)
@@ -7385,7 +7539,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U1")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 106.68 38.1 0)
@@ -7437,15 +7600,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R3")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C11702"
 			(at 106.68 38.1 0)
 			(hide yes)
@@ -7454,7 +7608,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R3")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 93.98 30.48 0)
@@ -7508,15 +7671,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C1")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 93.98 30.48 0)
 			(hide yes)
@@ -7525,7 +7679,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C1")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Connector_Audio:AudioJack3")
 		(at 30.48 96.52 0)
@@ -7577,15 +7740,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "J2")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "MPN" "PJ-3136-B"
 			(at 30.48 96.52 0)
 			(hide yes)
@@ -7594,7 +7748,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "J2")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 50.8 93.98 90)
@@ -7646,15 +7809,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R2")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 50.8 93.98 0)
 			(hide yes)
@@ -7663,7 +7817,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R2")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Diode:1N4148W")
 		(at 63.5 97.79 270)
@@ -7715,15 +7878,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "D2")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C81598"
 			(at 63.5 97.79 0)
 			(hide yes)
@@ -7732,7 +7886,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "D2")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Isolator:H11L1")
 		(at 86.36 96.52 0)
@@ -7786,15 +7949,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U2")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C20082"
 			(at 86.36 96.52 0)
 			(hide yes)
@@ -7812,7 +7966,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U2")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 106.68 88.9 0)
@@ -7864,15 +8027,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R4")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C11702"
 			(at 106.68 88.9 0)
 			(hide yes)
@@ -7881,7 +8035,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R4")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 93.98 81.28 0)
@@ -7935,15 +8098,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C2")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 93.98 81.28 0)
 			(hide yes)
@@ -7952,7 +8106,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C2")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Connector:USB_C_Receptacle_USB2.0_16P")
 		(at 40.64 165.1 0)
@@ -8004,15 +8167,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "J3")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C165948"
 			(at 40.64 165.1 0)
 			(hide yes)
@@ -8030,7 +8184,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "J3")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 66.04 154.94 90)
@@ -8082,15 +8245,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R5")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25905"
 			(at 66.04 154.94 0)
 			(hide yes)
@@ -8099,7 +8253,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R5")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 66.04 157.48 90)
@@ -8151,15 +8314,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R6")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25905"
 			(at 66.04 157.48 0)
 			(hide yes)
@@ -8168,9 +8322,18 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R6")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
-		(lib_id "Regulator_Linear:AP2112K-3.3")
+		(lib_id "Regulator_Linear:XC6206PxxxMR")
 		(at 101.6 160.02 0)
 		(unit 1)
 		(in_bom yes)
@@ -8186,7 +8349,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "AP2112K-3.3"
+		(property "Value" "XC6206P332MR"
 			(at 101.6 154.305 0)
 			(effects
 				(font
@@ -8195,7 +8358,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_TO_SOT_SMD:SOT-23-5"
+		(property "Footprint" "Package_TO_SOT_SMD:SOT-23-3"
 			(at 101.6 160.02 0)
 			(hide yes)
 			(effects
@@ -8204,7 +8367,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://www.diodes.com/assets/Datasheets/AP2112.pdf"
+		(property "Datasheet" "https://www.lcsc.com/datasheet/lcsc_datasheet_2304140030_Torex-Semicon-XC6206P332MR-G_C5446.pdf"
 			(at 101.6 160.02 0)
 			(hide yes)
 			(effects
@@ -8213,7 +8376,25 @@
 				)
 			)
 		)
-		(property "Description" "600mA low dropout linear regulator, with enable pin, 3.8V-6V input voltage range, 3.3V fixed positive output, SOT-23-5"
+		(property "Description" "200mA low dropout linear regulator, 3.3V fixed output, 6V max input, SOT-23-3"
+			(at 101.6 160.02 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C5446"
+			(at 101.6 160.02 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "XC6206P332MR-G"
 			(at 101.6 160.02 0)
 			(hide yes)
 			(effects
@@ -8230,25 +8411,7 @@
 				)
 			)
 		)
-	
-		(property "LCSC" "C51118"
-			(at 101.6 160.02 0)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "MPN" "AP2112K-3.3TRG1"
-			(at 101.6 160.02 0)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		))
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 81.28 161.29 0)
@@ -8302,15 +8465,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C3")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C52923"
 			(at 81.28 161.29 0)
 			(hide yes)
@@ -8319,7 +8473,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C3")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 76.2 161.29 0)
@@ -8373,15 +8536,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C4")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C15850"
 			(at 76.2 161.29 0)
 			(hide yes)
@@ -8390,7 +8544,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C4")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 114.3 161.29 0)
@@ -8444,15 +8607,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C5")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C52923"
 			(at 114.3 161.29 0)
 			(hide yes)
@@ -8461,7 +8615,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C5")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 119.38 161.29 0)
@@ -8515,15 +8678,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C6")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C15850"
 			(at 119.38 161.29 0)
 			(hide yes)
@@ -8532,7 +8686,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C6")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "MCU_RaspberryPi:RP2040")
 		(at 205.74 121.92 0)
@@ -8586,15 +8749,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U5")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C2040"
 			(at 205.74 121.92 0)
 			(hide yes)
@@ -8612,7 +8766,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U5")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 152.4 50.8 0)
@@ -8666,15 +8829,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C7")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 152.4 50.8 0)
 			(hide yes)
@@ -8683,7 +8837,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C7")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 160.02 50.8 0)
@@ -8737,15 +8900,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C8")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 160.02 50.8 0)
 			(hide yes)
@@ -8754,7 +8908,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C8")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 167.64 50.8 0)
@@ -8808,15 +8971,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C9")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 167.64 50.8 0)
 			(hide yes)
@@ -8825,7 +8979,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C9")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 175.26 50.8 0)
@@ -8879,15 +9042,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C10")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 175.26 50.8 0)
 			(hide yes)
@@ -8896,7 +9050,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C10")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 182.88 50.8 0)
@@ -8950,15 +9113,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C11")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 182.88 50.8 0)
 			(hide yes)
@@ -8967,7 +9121,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C11")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 190.5 50.8 0)
@@ -9021,15 +9184,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C12")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 190.5 50.8 0)
 			(hide yes)
@@ -9038,7 +9192,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C12")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 198.12 50.8 0)
@@ -9092,15 +9255,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C13")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 198.12 50.8 0)
 			(hide yes)
@@ -9109,7 +9263,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C13")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 205.74 50.8 0)
@@ -9163,15 +9326,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C14")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C52923"
 			(at 205.74 50.8 0)
 			(hide yes)
@@ -9180,7 +9334,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C14")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 213.36 50.8 0)
@@ -9234,15 +9397,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C15")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 213.36 50.8 0)
 			(hide yes)
@@ -9251,7 +9405,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C15")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 220.98 50.8 0)
@@ -9305,15 +9468,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C16")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 220.98 50.8 0)
 			(hide yes)
@@ -9322,7 +9476,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C16")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 228.6 50.8 0)
@@ -9376,15 +9539,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C17")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C52923"
 			(at 228.6 50.8 0)
 			(hide yes)
@@ -9393,7 +9547,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C17")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Memory_Flash:W25Q16JVSS")
 		(at 147.32 121.92 0)
@@ -9445,15 +9608,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U6")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C131025"
 			(at 147.32 121.92 0)
 			(hide yes)
@@ -9471,7 +9625,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U6")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 139.7 107.95 0)
@@ -9525,15 +9688,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C18")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 139.7 107.95 0)
 			(hide yes)
@@ -9542,7 +9696,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C18")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 165.1 95.25 0)
@@ -9594,15 +9757,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R10")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25744"
 			(at 165.1 95.25 0)
 			(hide yes)
@@ -9611,7 +9765,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R10")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Switch:SW_Push")
 		(at 137.16 99.06 0)
@@ -9664,15 +9827,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "SW2")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C318884"
 			(at 137.16 99.06 0)
 			(hide yes)
@@ -9690,7 +9844,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "SW2")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 172.72 106.68 90)
@@ -9707,7 +9870,7 @@
 				)
 			)
 		)
-		(property "Value" "27"
+		(property "Value" "22"
 			(at 172.72 104.14 90)
 			(effects
 				(font
@@ -9742,6 +9905,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C25092"
+			(at 172.72 106.68 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(instances
 			(project "midibox-v3"
 				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
@@ -9750,16 +9922,7 @@
 				)
 			)
 		)
-	
-		(property "LCSC" "C25100"
-			(at 172.72 106.68 0)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		))
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 172.72 109.22 90)
@@ -9776,7 +9939,7 @@
 				)
 			)
 		)
-		(property "Value" "27"
+		(property "Value" "22"
 			(at 172.72 111.76 90)
 			(effects
 				(font
@@ -9811,6 +9974,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C25092"
+			(at 172.72 109.22 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(instances
 			(project "midibox-v3"
 				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
@@ -9819,16 +9991,7 @@
 				)
 			)
 		)
-	
-		(property "LCSC" "C25100"
-			(at 172.72 109.22 0)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		))
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 118.11 139.7 0)
@@ -9880,15 +10043,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R11")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25744"
 			(at 118.11 139.7 0)
 			(hide yes)
@@ -9897,7 +10051,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R11")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 121.92 147.32 90)
@@ -9949,15 +10112,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R12")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C11702"
 			(at 121.92 147.32 0)
 			(hide yes)
@@ -9966,7 +10120,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R12")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Switch:SW_Push")
 		(at 133.35 147.32 0)
@@ -10019,15 +10182,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "SW1")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C318884"
 			(at 133.35 147.32 0)
 			(hide yes)
@@ -10045,7 +10199,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "SW1")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:Crystal_GND24")
 		(at 160.02 143.51 270)
@@ -10099,15 +10262,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "Y1")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C20625731"
 			(at 160.02 143.51 0)
 			(hide yes)
@@ -10125,7 +10279,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "Y1")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 160.02 133.35 0)
@@ -10179,15 +10342,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C19")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1548"
 			(at 160.02 133.35 0)
 			(hide yes)
@@ -10196,7 +10350,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C19")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 160.02 154.94 0)
@@ -10250,15 +10413,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C20")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1548"
 			(at 160.02 154.94 0)
 			(hide yes)
@@ -10267,7 +10421,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C20")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 172.72 147.32 90)
@@ -10319,15 +10482,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R9")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C11702"
 			(at 172.72 147.32 0)
 			(hide yes)
@@ -10336,7 +10490,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R9")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_01x03")
 		(at 165.1 180.34 0)
@@ -10361,7 +10524,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_JST:JST_SH_SM03B-SRSS-TB_1x03-1MP_P1.00mm_Horizontal"
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
 			(at 165.1 180.34 0)
 			(hide yes)
 			(effects
@@ -10388,6 +10551,24 @@
 				)
 			)
 		)
+		(property "LCSC" ""
+			(at 165.1 180.34 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" ""
+			(at 165.1 180.34 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(instances
 			(project "midibox-v3"
 				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
@@ -10396,25 +10577,7 @@
 				)
 			)
 		)
-	
-		(property "LCSC" "C3029342"
-			(at 165.1 180.34 0)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "MPN" "WAFER-SH1.0-3PWB"
-			(at 165.1 180.34 0)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		))
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 241.3 147.32 90)
@@ -10466,15 +10629,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R13")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C11702"
 			(at 241.3 147.32 0)
 			(hide yes)
@@ -10483,7 +10637,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R13")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:LED")
 		(at 252.73 147.32 180)
@@ -10535,15 +10698,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "D3")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C2286"
 			(at 252.73 147.32 0)
 			(hide yes)
@@ -10561,7 +10715,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "D3")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "74xx:74HC14")
 		(at 294.64 55.88 0)
@@ -10613,15 +10776,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U3")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C6769"
 			(at 294.64 55.88 0)
 			(hide yes)
@@ -10639,7 +10793,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U3")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "74xx:74HC14")
 		(at 294.64 73.66 0)
@@ -10691,15 +10854,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U3")
-					(unit 2)
-				)
-			)
-		)
-	
 		(property "LCSC" "C6769"
 			(at 294.64 73.66 0)
 			(hide yes)
@@ -10717,7 +10871,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U3")
+					(unit 2)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "74xx:74HC14")
 		(at 294.64 93.98 0)
@@ -10769,15 +10932,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U3")
-					(unit 3)
-				)
-			)
-		)
-	
 		(property "LCSC" "C6769"
 			(at 294.64 93.98 0)
 			(hide yes)
@@ -10795,7 +10949,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U3")
+					(unit 3)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "74xx:74HC14")
 		(at 294.64 114.3 0)
@@ -10847,15 +11010,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U3")
-					(unit 4)
-				)
-			)
-		)
-	
 		(property "LCSC" "C6769"
 			(at 294.64 114.3 0)
 			(hide yes)
@@ -10873,7 +11027,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U3")
+					(unit 4)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "74xx:74HC14")
 		(at 294.64 134.62 0)
@@ -10925,15 +11088,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U3")
-					(unit 5)
-				)
-			)
-		)
-	
 		(property "LCSC" "C6769"
 			(at 294.64 134.62 0)
 			(hide yes)
@@ -10951,7 +11105,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U3")
+					(unit 5)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "74xx:74HC14")
 		(at 294.64 154.94 0)
@@ -11003,15 +11166,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U3")
-					(unit 6)
-				)
-			)
-		)
-	
 		(property "LCSC" "C6769"
 			(at 294.64 154.94 0)
 			(hide yes)
@@ -11029,7 +11183,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U3")
+					(unit 6)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "74xx:74HC14")
 		(at 294.64 187.96 0)
@@ -11081,15 +11244,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "U3")
-					(unit 7)
-				)
-			)
-		)
-	
 		(property "LCSC" "C6769"
 			(at 294.64 187.96 0)
 			(hide yes)
@@ -11107,7 +11261,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "U3")
+					(unit 7)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:C")
 		(at 304.8 179.07 0)
@@ -11161,15 +11324,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "C21")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C1525"
 			(at 304.8 179.07 0)
 			(hide yes)
@@ -11178,7 +11332,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "C21")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 312.42 73.66 90)
@@ -11230,15 +11393,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R14")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 312.42 73.66 0)
 			(hide yes)
@@ -11247,7 +11401,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R14")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 312.42 93.98 90)
@@ -11299,15 +11462,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R15")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 312.42 93.98 0)
 			(hide yes)
@@ -11316,7 +11470,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R15")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 312.42 114.3 90)
@@ -11368,15 +11531,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R16")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 312.42 114.3 0)
 			(hide yes)
@@ -11385,7 +11539,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R16")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 312.42 134.62 90)
@@ -11437,15 +11600,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R17")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 312.42 134.62 0)
 			(hide yes)
@@ -11454,7 +11608,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R17")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 312.42 154.94 90)
@@ -11506,15 +11669,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R18")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 312.42 154.94 0)
 			(hide yes)
@@ -11523,7 +11677,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R18")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 355.6 76.2 90)
@@ -11575,15 +11738,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R19")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 355.6 76.2 0)
 			(hide yes)
@@ -11592,7 +11746,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R19")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 355.6 96.52 90)
@@ -11644,15 +11807,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R20")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 355.6 96.52 0)
 			(hide yes)
@@ -11661,7 +11815,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R20")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 355.6 116.84 90)
@@ -11713,15 +11876,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R21")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 355.6 116.84 0)
 			(hide yes)
@@ -11730,7 +11884,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R21")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 355.6 137.16 90)
@@ -11782,15 +11945,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R22")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 355.6 137.16 0)
 			(hide yes)
@@ -11799,7 +11953,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R22")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Device:R")
 		(at 355.6 157.48 90)
@@ -11851,15 +12014,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "R23")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "LCSC" "C25091"
 			(at 355.6 157.48 0)
 			(hide yes)
@@ -11868,7 +12022,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "R23")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Connector_Audio:AudioJack3")
 		(at 381 76.2 180)
@@ -11920,15 +12083,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "J5")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "MPN" "PJ-3136-B"
 			(at 381 76.2 0)
 			(hide yes)
@@ -11937,7 +12091,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "J5")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Connector_Audio:AudioJack3")
 		(at 381 96.52 180)
@@ -11989,15 +12152,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "J6")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "MPN" "PJ-3136-B"
 			(at 381 96.52 0)
 			(hide yes)
@@ -12006,7 +12160,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "J6")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Connector_Audio:AudioJack3")
 		(at 381 116.84 180)
@@ -12058,15 +12221,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "J7")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "MPN" "PJ-3136-B"
 			(at 381 116.84 0)
 			(hide yes)
@@ -12075,7 +12229,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "J7")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Connector_Audio:AudioJack3")
 		(at 381 137.16 180)
@@ -12127,15 +12290,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "J8")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "MPN" "PJ-3136-B"
 			(at 381 137.16 0)
 			(hide yes)
@@ -12144,7 +12298,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "J8")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Connector_Audio:AudioJack3")
 		(at 381 157.48 180)
@@ -12196,15 +12359,6 @@
 				)
 			)
 		)
-		(instances
-			(project "midibox-v3"
-				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
-					(reference "J9")
-					(unit 1)
-				)
-			)
-		)
-	
 		(property "MPN" "PJ-3136-B"
 			(at 381 157.48 0)
 			(hide yes)
@@ -12213,7 +12367,16 @@
 					(size 1.27 1.27)
 				)
 			)
-		))
+		)
+		(instances
+			(project "midibox-v3"
+				(path "/216a33b8-282f-456e-b7bc-68294f813b53"
+					(reference "J9")
+					(unit 1)
+				)
+			)
+		)
+	)
 	(symbol
 		(lib_id "Mechanical:MountingHole")
 		(at 340.36 195.58 0)
