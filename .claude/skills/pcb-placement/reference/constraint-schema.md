@@ -3,9 +3,11 @@
 `placement.yaml` holds the placement intent for one board. The schema lives in
 `scripts/constraints.py`; `templates/placement.yaml` is a starter file.
 
-**Units and frame:** millimetres and degrees. Origin at the top-left corner of the Edge.Cuts
-bounding box, x to the right, y downward (as in KiCad). Rotation follows KiCad: positive is
-counter-clockwise on screen.
+**Units and frame:** millimetres and degrees. Origin at the top-left corner of the bounding
+box of the board outline (Edge.Cuts; the chosen one when there are several), x to the right,
+y downward (as in KiCad). Rotation follows KiCad: positive is counter-clockwise on screen.
+`board_io.py BOARD --socket URL read` prints this origin in KiCad coordinates
+(`origin_kicad_mm`). The one exception is `board.outline_at`, which is in KiCad coordinates.
 
 Every section is optional. Unknown keys are errors, so a typo never silently turns a
 constraint off.
@@ -17,9 +19,35 @@ constraint off.
 | Field | Type | Default | Meaning |
 | --- | --- | --- | --- |
 | `outline` | `edge_cuts` | `edge_cuts` | Outline source; only Edge.Cuts is supported |
-| `grid_mm` | number > 0 | `0.25` | Placer position grid |
+| `outline_at` | `[x, y]` | none | A point inside the outline to place, in KiCad's absolute coordinates (mm, as KiCad's status bar shows them with the page origin). Required when Edge.Cuts holds more than one outline |
+| `grid_mm` | number > 0 | `0.25` | Placer position grid. Match the grid the board already uses (look at the existing poses; THT boards often use 1.27 or 0.635) |
 | `edge_clearance_mm` | number >= 0 | `0.5` | Minimum courtyard-to-outline gap (hard) |
 | `sides` | list of `top`/`bottom`, at least one | `[top]` | Sides the placer may use: it moves parts already on these sides and never flips a part; parts on other sides stay put |
+
+#### Several outlines in one file
+
+Some files hold more than one board, for example a front panel next to the circuit board.
+Then every script stops (exit 2) until `board.outline_at` picks one, and the message lists
+each outline with its bounding box in KiCad coordinates and the exact line to add, e.g.
+`outline_at: [120.65, 80.01]`. `board_io.py ... read` lists the same outlines (`outlines`,
+each with `kicad_mm` = `[x0, y0, x1, y1]` and a suggested `outline_at`). A cutout inside an
+outline (a mounting-hole slot) is not a separate outline.
+
+With an outline chosen, a part whose courtyard lies entirely outside it is treated as not on
+this board: it never moves and is left out of the overlap and edge checks, but its pads still
+count for wirelength, crossings and decoupling (nets run between the boards). A part listed
+under `movable:` is always on this board, so parts parked beside the outline can be placed.
+
+### `movable`
+
+List of refs. When present, only these parts may move; every other part stays at its board
+pose without a `fixed:` entry (so there is no `fixed_moved` check for it) and is exempt from
+the edge check, like a fixed part. Locked parts and parts on a side not in `board.sides` still
+do not move (validate.py warns). A ref may not be both in `movable` and under `fixed`.
+Without `movable`, every part that is not fixed, not locked and on a side in `board.sides`
+may move.
+
+Example: `movable: [R1, R2, C5, C6]`
 
 ### `fixed` (hard)
 
@@ -120,8 +148,9 @@ Reported by `scripts/metrics.py`; all distances in mm.
 | Metric | Hard or soft | Definition |
 | --- | --- | --- |
 | Courtyard | - | Closed shapes on F.CrtYd/B.CrtYd; lines that do not close give their convex hull; a footprint with no courtyard uses its pad bounding box plus 0.25 mm |
-| `overlaps` | Hard | Two footprints on the same side whose courtyards intersect with area > 0.0001 mm². `depth_mm` = smaller side of the intersection's bounding box |
-| `edge` | Hard | Courtyard closer than `edge_clearance_mm` to the outline (board holes included). `clearance_mm` < 0 means it reaches outside. Fixed and KiCad-locked parts are exempt |
+| `overlaps` | Hard | `kind: courtyard`: two footprints on the same side whose courtyards intersect with area > 0.0001 mm². `kind: through_hole`: `b`'s courtyard, on either side, covers a through-hole pad of `a` grown by 0.25 mm (room for the solder joint), listed only when the pair has no courtyard overlap. `depth_mm` = smaller side of the intersection's bounding box. Parts off the chosen outline are left out |
+| Through-hole pad | - | A plated or unplated hole: the larger of its copper pad and its drill, as a rectangle. It goes through the board, so it blocks parts on both sides; the placer keeps courtyards clear of it |
+| `edge` | Hard | Courtyard closer than `edge_clearance_mm` to the outline (board holes included). `clearance_mm` < 0 means it reaches outside. Fixed and KiCad-locked parts, parts left out of a `movable:` list, and parts off the chosen outline are exempt |
 | `region` | Hard | Group member's courtyard not fully inside its region. `outside_mm` = farthest courtyard corner from the region |
 | `fixed_moved` | Hard | Fixed part more than 0.01 mm from its `x, y`, or more than 0.1° from its `rot` (compared modulo 360) |
 | `decoupling` | Soft | Distance from the centre of the cap pad on the shared net to the centre of the IC pin |
@@ -148,7 +177,8 @@ only once the schema is valid. `metrics.py` refuses (exit 2) a file with any of 
 | Not YAML, unknown key, wrong type, value out of range, missing required field | `weights.typo`, `decoupling[0].max_mm` |
 | Region with `x0 >= x1` or `y0 >= y1` | `regions.power` |
 | `power_nets` entry that is not a valid regular expression | `power_nets[0]` |
-| Ref not on the board (fixed, members, decoupling cap/ic, proximity) | `groups[1].members[2]` |
+| Ref not on the board (fixed, movable, members, decoupling cap/ic, proximity) | `groups[1].members[2]` |
+| Ref both in `movable` and under `fixed`; movable ref locked in KiCad or on a side not in `board.sides` (warning: it will not move) | `movable[0]` |
 | IC has no pad number or pin name `pin`; cap shares no net with that pin | `decoupling[0].pin`, `decoupling[0].cap` |
 | Part in two groups, or twice in one group | `groups[1].members[0]` |
 | Group name used twice | `groups[2].name` |
@@ -164,7 +194,9 @@ only once the schema is valid. `metrics.py` refuses (exit 2) a file with any of 
 | Recipe role not mapped in `roles` (warning: the recipe does not place that part) | `groups[0].roles` |
 
 `place.py` refuses (exit 2) a file with any of these errors, recipe errors included
-(`metrics.py` does not read recipes).
+(`metrics.py` does not read recipes). Warnings do not stop either script. A missing or
+wrong `board.outline_at` on a file with several outlines is not a problem line: every
+script stops with exit 2 and lists the outlines (see "Several outlines in one file").
 
 ## Block recipes
 
@@ -193,6 +225,16 @@ The whole block turns with the anchor: a part goes to its reference point plus (
 rotated by the anchor's rotation, at the anchor's rotation plus `rot`. `rel_to` may name the
 anchor or another part, but not form a cycle. In `placement.yaml`, `groups[].roles` maps
 every other role to a member (`roles: {CIN: C5, L: L1}`); the anchor role maps to
-`groups[].anchor`. The placer puts each mapped part at its offset, then moves it to the
-nearest legal spot if that one is taken or outside the region. Members without a role are
-placed near the pins they connect to.
+`groups[].anchor`. Members without a role are placed near the pins they connect to and
+move on their own.
+
+The anchor and its mapped parts form one rigid block. On a fresh build the placer puts each
+mapped part at its offset (snapped to `grid_mm`) and moves the whole block to the nearest
+spot where all of it is legal. When the offsets make the block's own parts overlap (a part
+larger than the recipe assumes), or no spot holds the whole block, it places the parts one by
+one instead, each pushed to the nearest free spot, and the block keeps those offsets. While annealing, the block shifts, turns in 90° steps (the
+offsets turn with it) and mirrors only as one unit, and is never swapped; when refining from
+the board, the block keeps the offsets it has on the board. If the anchor or a mapped part
+cannot move (fixed, locked, not in `movable:`), none of the block moves during annealing;
+with a fixed anchor, the mapped parts go to their offsets (or the nearest free spot) on a
+fresh build and stay there.

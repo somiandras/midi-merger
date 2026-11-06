@@ -5,9 +5,17 @@
 
 board:
   outline: edge_cuts        # the only option: the outline is read from Edge.Cuts
-  grid_mm: 0.25             # placer snaps positions to this grid
+  grid_mm: 0.25             # placer snaps positions to this grid; match the board's grid (THT: 1.27, 0.635)
   edge_clearance_mm: 0.5    # min courtyard-to-edge gap (fixed and locked parts exempt)
   sides: [top]              # sides the placer may use: [top], [bottom] or [top, bottom]
+  # Nothing to set for through-hole pads: they block parts on both sides, with 0.25 mm clearance.
+  # Only when Edge.Cuts holds several outlines (e.g. a panel next to the board): a point
+  # inside the one to place, in KiCad's absolute coordinates. The scripts print the line to use.
+  # outline_at: [120.0, 80.0]
+
+# Optional. When present, only these parts move; all others stay where they are on the
+# board without needing a fixed: entry.
+# movable: [EX_R1, EX_R2, EX_C5]
 
 # Parts the placer never moves. Position is the footprint anchor point in KiCad; rot is
 # optional (omit to accept any rotation). Parts locked in KiCad are never moved either.

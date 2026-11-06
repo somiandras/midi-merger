@@ -24,8 +24,10 @@ front of the D+/D- pads stays free for the data lines to run straight to the MCU
   member, with a `proximity` rule to the connector (at most 5 mm).
 
 **Roles to map in `placement.yaml`:** anchor = the receptacle (usually also under
-`fixed:`, which is allowed), `RCC1` = resistor on CC1, `RCC2` = resistor on CC2. Leave
-`region` off the group unless the region also holds the whole connector courtyard.
+`fixed:`, which is allowed), `RCC1` = resistor on CC1, `RCC2` = resistor on CC2. With the
+connector fixed or locked, the resistors go to their recipe spots and the annealer leaves
+them there. Leave `region` off the group unless the region also holds the whole connector
+courtyard.
 Example: `{name: usb_cc, anchor: J3, recipe: usb-c, roles: {RCC1: R5, RCC2: R6}, members: [J3, R5, R6]}`
 
 ```yaml
