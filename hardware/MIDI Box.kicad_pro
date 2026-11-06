@@ -259,7 +259,7 @@
       "internal_id": "",
       "mfg": "",
       "mpn": "",
-      "sch_revision": ""
+      "sch_revision": "2.1"
     },
     "layer_pairs": [],
     "layer_presets": [],
@@ -666,7 +666,7 @@
       {
         "filename": "MIDI Box.kicad_sch",
         "name": "MIDI Box",
-        "uuid": "00000000-0000-0000-0000-000000000000"
+        "uuid": "105da064-4ba0-4ce7-8731-527e6820ace0"
       }
     ],
     "used_designators": "",
@@ -675,7 +675,7 @@
   "sheets": [
     [
       "105da064-4ba0-4ce7-8731-527e6820ace0",
-      "Root"
+      "MIDI Box"
     ]
   ],
   "text_variables": {},

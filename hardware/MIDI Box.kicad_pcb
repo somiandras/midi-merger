@@ -10490,7 +10490,7 @@
 			(justify left bottom)
 		)
 	)
-	(gr_text "MIDI Merger Rev: 2.0"
+	(gr_text "MIDI Merger Rev: 2.1"
 		(at 157.448 130.524 90)
 		(layer "F.SilkS")
 		(uuid "be038e0e-fd0c-469d-8e31-fee66e6b15fb")
