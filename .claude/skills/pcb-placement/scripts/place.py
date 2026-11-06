@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["kicad-python>=0.8.0", "shapely>=2.0", "pydantic>=2.6", "pyyaml>=6", "numpy>=1.26"]
+# dependencies = ["kicad-python==0.8.0", "shapely>=2.0", "pydantic>=2.6", "pyyaml>=6", "numpy>=1.26"]
 # ///
 """Place the movable footprints of a board open in KiCad from placement.yaml.
 
@@ -15,7 +15,8 @@ metrics summary of the result.
 The same seed, input and --iterations give identical moves, unless the --budget runs out
 first: the output then says "budget cap hit" and the result depends on machine speed.
 By default the annealer starts from the better of the constructed placement and the current
-board; --from-scratch always starts from the constructed placement.
+board; starting from the board it only refines (small moves near each part's current spot).
+--from-scratch always starts from the constructed placement and may move anything.
 
 Exit codes: 0 no hard violations, 1 hard violations, 2 input error.
 """

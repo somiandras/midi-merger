@@ -1,5 +1,6 @@
 """The placer on small synthetic boards (no KiCad needed)."""
 
+import math
 import random
 from pathlib import Path
 
@@ -7,7 +8,7 @@ import pytest
 
 from board_model import BoardData, Pose
 from constraints import FixedPart, Placement
-from placer import Layout, place
+from placer import REFINE_TETHER_MM, Layout, place
 from recipes import Recipe, RecipeError, load_recipe, part_pose
 from scoring import score
 from synthetic import board, part
@@ -101,6 +102,22 @@ def test_annealing_lowers_the_cost_of_the_constructed_start() -> None:
     out = place(b, p, {}, seed=2, iterations=600, budget_s=60, from_scratch=True)
     assert out.start == "constructed"
     assert out.cost <= out.start_cost
+
+
+def test_refining_a_good_board_placement_moves_few_parts_a_little() -> None:
+    # A chain R1 - R2 - ... - R8 laid out in order, 0.5 mm apart, with one part pulled out of line.
+    chain = [part(f"R{i}", 10 + 2.5 * i, 20, pads=[("1", f"/N{i - 1}", -0.5, 0), ("2", f"/N{i}", 0.5, 0)]) for i in range(1, 9)]
+    chain[4] = part("R5", 20, 21.5, pads=[("1", "/N4", -0.5, 0), ("2", "/N5", 0.5, 0)])
+    b, p = board(*chain), Placement()
+    layout = Layout(b, p, {})
+    layout.legalise_board()
+    before = layout.cost()
+    layout.anneal(random.Random(4), 800, math.inf, refine=True)
+    assert layout.cost() < before
+    old = b.poses()
+    moved = {ref: math.hypot(pose.x - old[ref].x, pose.y - old[ref].y) for ref, pose in layout.poses.items() if pose != old[ref]}
+    assert 1 <= len(moved) <= 3, moved
+    assert all(d <= REFINE_TETHER_MM + 1e-9 for d in moved.values()), moved
 
 
 def test_budget_cap_is_reported() -> None:

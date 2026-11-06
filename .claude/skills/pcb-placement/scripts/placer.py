@@ -19,9 +19,12 @@ Parts under `fixed:`, parts locked in KiCad, and parts on a side not in board.si
 obstacles and never move. The placer never flips a part to the other side.
 
 Start: the constructed placement (phases 1-3) or, unless `from_scratch`, the current board
-poses with only the illegal parts legalised, whichever scores lower. A re-run on a placed
-board therefore refines it instead of starting over. Parts the placer never moves keep their
-exact pose, even off grid.
+poses with only the illegal parts legalised, whichever scores lower. From the constructed
+start the annealer runs hot and may move anything. From the board start it only refines:
+temperature 0 with a minimum gain per accepted move, short shifts, every part tethered near
+its board position, no swaps or mirrors (see Layout.anneal and the REFINE_* constants). So a
+re-run after a human has locked what they like nudges the rest instead of rewriting it.
+Parts the placer never moves keep their exact pose, even off grid.
 
 Determinism: one random.Random(seed) drives every choice, and the annealer runs a fixed
 number of iterations. Wall-clock time only matters when the time budget runs out first;
@@ -60,6 +63,11 @@ MOVE_RADIUS_MM = 2.0
 T_END_RATIO = 1e-3
 T0_SAMPLES = 40
 MOVE_SHIFT, MOVE_ROTATE, MOVE_SWAP = 0.65, 0.80, 0.92
+# Refining the board placement (see Layout.anneal): least cost drop that moves a part, largest
+# single shift, and farthest a part may end up from its board position.
+REFINE_MIN_GAIN = 1.0
+REFINE_REACH_MM = 1.0
+REFINE_TETHER_MM = 2.0
 ITERATIONS_PER_PART = 250
 
 
@@ -484,7 +492,10 @@ class Layout:
             classes.setdefault(repr((fp.side, pads, ring)), []).append(ref)
         return [refs for _, refs in sorted(classes.items()) if len(refs) >= 2]
 
-    def propose(self, rng: random.Random, progress: float, swaps: Sequence[Sequence[str]], mirrors: Sequence[Group]) -> list[tuple[str, Pose]]:
+    def propose(
+        self, rng: random.Random, progress: float, swaps: Sequence[Sequence[str]], mirrors: Sequence[Group], reach_mm: float | None
+    ) -> list[tuple[str, Pose]]:
+        """One move. Shifts reach `reach_mm`, or half the part's region shrinking to 4 grid steps when None."""
         kind = rng.random()
         if kind >= MOVE_SWAP and mirrors:
             group = mirrors[rng.randrange(len(mirrors))]
@@ -505,23 +516,24 @@ class Layout:
         pose = self.poses[ref]
         if kind >= MOVE_SHIFT:
             return [(ref, Pose(x=pose.x, y=pose.y, rot=quarter(pose.rot) + rng.choice((90.0, 270.0))))]
-        lim = self.limits(ref)
-        span = max(lim[2] - lim[0], lim[3] - lim[1])
-        reach = max(4 * self.grid, 0.5 * span * (1.0 - progress))
+        if reach_mm is None:
+            lim = self.limits(ref)
+            reach = max(4 * self.grid, 0.5 * max(lim[2] - lim[0], lim[3] - lim[1]) * (1.0 - progress))
+        else:
+            reach = reach_mm
         return [(ref, Pose(x=pose.x + rng.uniform(-reach, reach), y=pose.y + rng.uniform(-reach, reach), rot=pose.rot))]
 
-    def anneal(self, rng: random.Random, iterations: int, deadline: float) -> tuple[int, int, bool]:
-        """Phase 4. Leaves the best state found loaded. Returns (iterations run, accepted, deadline hit)."""
-        if not self.movable or iterations <= 0:
-            return (0, 0, False)
-        swaps = self._swap_classes()
-        mirrors = [g for g in self.placement.groups if sum(1 for r in g.members if r in self.movable_set) >= 2]
-        current = self.cost()
-        best, best_poses = current, dict(self.poses)
+    def _drift(self, ref: str) -> float:
+        """Distance of the part from its board position."""
+        pose, start = self.poses[ref], self.board_pose(ref)
+        return math.hypot(pose.x - start.x, pose.y - start.y)
 
+    def _start_temperature(self, rng: random.Random, swaps: Sequence[Sequence[str]], mirrors: Sequence[Group]) -> float:
+        """Mean cost rise of T0_SAMPLES random moves (hard violations left out); the state is unchanged."""
+        current = self.cost()
         rises: list[float] = []
         for _ in range(T0_SAMPLES):
-            move = self.propose(rng, 0.0, swaps, mirrors)
+            move = self.propose(rng, 0.0, swaps, mirrors, None)
             old = [(ref, self.poses[ref]) for ref, _ in move]
             if move and self.move_all(move, MOVE_RADIUS_MM):
                 delta = self.cost() - current
@@ -529,7 +541,23 @@ class Layout:
                     rises.append(delta)
                 for ref, pose in old:
                     self.set_pose(ref, pose)
-        t0 = sum(rises) / len(rises) if rises else 1.0
+        return sum(rises) / len(rises) if rises else 1.0
+
+    def anneal(self, rng: random.Random, iterations: int, deadline: float, refine: bool) -> tuple[int, int, bool]:
+        """Phase 4. Leaves the best state found loaded. Returns (iterations run, accepted, deadline hit).
+
+        `refine` keeps a good placement mostly as it is: temperature 0 (only moves that lower
+        the cost by more than REFINE_MIN_GAIN are accepted), shifts of at most REFINE_REACH_MM,
+        no part more than REFINE_TETHER_MM from its board position, no swaps or mirrors.
+        """
+        if not self.movable or iterations <= 0:
+            return (0, 0, False)
+        swaps = [] if refine else self._swap_classes()
+        mirrors = [] if refine else [g for g in self.placement.groups if sum(1 for r in g.members if r in self.movable_set) >= 2]
+        reach = REFINE_REACH_MM if refine else None
+        t0 = 0.0 if refine else self._start_temperature(rng, swaps, mirrors)
+        current = self.cost()
+        best, best_poses = current, dict(self.poses)
 
         done = accepted = 0
         hit = False
@@ -540,13 +568,18 @@ class Layout:
             done = it + 1
             progress = it / iterations
             temp = t0 * T_END_RATIO**progress
-            move = self.propose(rng, progress, swaps, mirrors)
+            move = self.propose(rng, progress, swaps, mirrors, reach)
             old = [(ref, self.poses[ref]) for ref, _ in move]
             if not move or not self.move_all(move, MOVE_RADIUS_MM):
                 continue
+            if refine and any(self._drift(ref) > REFINE_TETHER_MM for ref, _ in move):
+                for ref, pose in old:
+                    self.set_pose(ref, pose)
+                continue
             new = self.cost()
             delta = new - current
-            if delta <= 0 or rng.random() < math.exp(-delta / temp):
+            improved = delta < -REFINE_MIN_GAIN if refine else delta <= 0
+            if improved or (temp > 0 and rng.random() < math.exp(-delta / temp)):
                 current = new
                 accepted += 1
                 if new < best:
@@ -585,7 +618,7 @@ def place(
             start, start_cost = "board", board_cost
         else:
             layout.load(built)
-    done, accepted, hit = layout.anneal(rng, iterations, deadline)
+    done, accepted, hit = layout.anneal(rng, iterations, deadline, refine=start == "board")
     return Outcome(
         poses={ref: layout.poses[ref] for ref in layout.movable},
         start=start,

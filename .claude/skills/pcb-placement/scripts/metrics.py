@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["kicad-python>=0.8.0", "shapely>=2.0", "pydantic>=2.6", "pyyaml>=6"]
+# dependencies = ["kicad-python==0.8.0", "shapely>=2.0", "pydantic>=2.6", "pyyaml>=6"]
 # ///
 """Score the placement of a board open in KiCad against placement.yaml.
 

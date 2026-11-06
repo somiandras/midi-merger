@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["kicad-python>=0.8.0", "shapely>=2.0", "pydantic>=2.6", "pyyaml>=6"]
+# dependencies = ["kicad-python==0.8.0", "shapely>=2.0", "pydantic>=2.6", "pyyaml>=6"]
 # ///
 """Read footprints from, and move footprints on, a board open in KiCad, over the IPC API.
 
@@ -11,6 +11,10 @@ never touch a different board that happens to be open on that socket.
 
 Coordinates leaving this module are in the board frame of board_model (mm, degrees, origin
 at the top-left of the Edge.Cuts bounding box). KiCad's absolute nanometres stay inside.
+
+kicad-python is pinned to 0.8.0 in every script header because this module works around
+kipy 0.8.0's KiCad 10 gaps (raw GetItems unpacking and a hand-built ReferencePoint message);
+drop the workaround, and the pin, once kipy supports KiCad 10.
 
 CLI:
     board_io.py BOARD [--socket URL] read          print footprint poses as JSON
