@@ -154,7 +154,7 @@ Reported by `scripts/metrics.py`; all distances in mm.
 | `region` | Hard | Group member's courtyard not fully inside its region. `outside_mm` = farthest courtyard corner from the region |
 | `fixed_moved` | Hard | Fixed part more than 0.01 mm from its `x, y`, or more than 0.1° from its `rot` (compared modulo 360) |
 | `decoupling` | Soft | Distance from the centre of the cap pad on the shared net to the centre of the IC pin |
-| Automatic decoupling | Soft | Caps are refs `C<n>`, ICs are `U<n>` or `IC<n>`. Each unlisted cap pairs with the nearest IC pad sharing one of its supply nets (a power net that is not ground). Caps with no such net are skipped |
+| Automatic decoupling | Soft | Caps are refs `C<n>`, ICs are `U<n>` or `IC<n>`. Each unlisted cap with one pad on ground pairs with the nearest IC pad sharing one of its supply nets (a power net that is not ground). Caps with no ground pad (filter, timing, coupling caps) or no supply net are skipped |
 | `proximity` | Soft | Gap between the two courtyards (0 when they touch or overlap) |
 | `separation` | Soft | Gap between the union of `a`'s member courtyards and the union of `b`'s |
 | `hpwl_mm` | Soft | Per net: half the perimeter of the bounding box of its pad centres, summed. Power nets left out unless in `critical_nets` |

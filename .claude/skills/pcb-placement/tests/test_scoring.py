@@ -231,6 +231,15 @@ def test_decoupling_auto_pairs_remaining_caps_on_supply_net() -> None:
     assert s.soft.decoupling[0].dist_mm == pytest.approx(math.dist((30, 30), (18, 18)))
 
 
+def test_decoupling_auto_skips_cap_without_ground_pad() -> None:
+    b = board(
+        part("U1", 20, 20, w=6, h=6, pads=[("1", "+3V3", -2, -2), ("2", "GND", -2, 2), ("3", "/IO", 2, 0)]),
+        part("C14", 40, 40, pads=[("1", "+3V3", 0, 0), ("2", "/FILTER", 1, 0)]),
+    )
+    s = score(b, Placement(decoupling=[DecouplingAuto(auto=True, max_mm=3.0)]))
+    assert s.soft.decoupling == []
+
+
 def test_proximity_uses_courtyard_gap() -> None:
     b = board(part("Y1", 10, 10, w=2, h=2), part("U1", 20, 10, w=2, h=2))
     p = Placement(proximity=[Proximity(a="Y1", b="U1", max_mm=5.0)])

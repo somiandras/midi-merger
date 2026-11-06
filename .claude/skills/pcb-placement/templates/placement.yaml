@@ -45,7 +45,7 @@ groups:
 # Cap within max_mm of an IC pin (pin = pad number or symbol pin name). Soft unless hard: true.
 decoupling:
   - {cap: EX_C10, ic: EX_U1, pin: "1", max_mm: 2.0}
-  - {auto: true, max_mm: 3.0}   # every other C<n> to the nearest U<n>/IC<n> pin on a shared supply net
+  - {auto: true, max_mm: 3.0}   # every other supply-to-ground C<n> to the nearest U<n>/IC<n> pin on its supply net
 
 # Courtyard gap between two parts at most max_mm. Soft unless hard: true.
 proximity:

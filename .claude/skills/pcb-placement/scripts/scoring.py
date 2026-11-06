@@ -428,6 +428,10 @@ def _decoupling(placed: _Placed, placement: Placement, ground: Sequence[re.Patte
         for ref, cap in sorted(placed.footprints.items()):
             if ref in paired or not CAPACITOR_REF.fullmatch(ref):
                 continue
+            # Only a cap between a supply and ground decouples; a cap from a supply to a
+            # signal net (filter, timing, coupling) must not be pulled to an IC supply pin.
+            if not any(cp.net and net_matches(cp.net, ground) for cp in cap.pads):
+                continue
             best: tuple[float, str, str] | None = None
             for cp in cap.pads:
                 if not cp.net or not net_matches(cp.net, power) or net_matches(cp.net, ground):
