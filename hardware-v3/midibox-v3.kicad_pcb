@@ -161,6 +161,12 @@
 		(path "/888569e7-ddd6-48d5-b763-5d3ef1b57a6e")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -343,6 +349,12 @@
 		(path "/3622667a-7c5c-4185-b036-73f5d5ffcabe")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "6" "5" "2" "3" "7" "8" "4")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -567,6 +579,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/QSPI_SS")
+			(pinfunction "~{CS}_1")
+			(pintype "input")
 			(uuid "6edce120-6dbc-409c-9268-c65260c89e43")
 		)
 		(pad "2" smd roundrect
@@ -575,6 +589,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/QSPI_SD1")
+			(pinfunction "DO/IO_{1}_2")
+			(pintype "bidirectional")
 			(uuid "74d73668-7707-4eb0-87ba-6a95e86b7843")
 		)
 		(pad "3" smd roundrect
@@ -583,6 +599,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/QSPI_SD2")
+			(pinfunction "~{WP}/IO_{2}_3")
+			(pintype "bidirectional")
 			(uuid "e557fe04-b8d1-4ff8-ae6a-18a0cc689147")
 		)
 		(pad "4" smd roundrect
@@ -591,6 +609,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "GND")
+			(pinfunction "GND_4")
+			(pintype "power_in")
 			(uuid "c2ef88e8-9ad5-49c5-99c5-872cbec729fa")
 		)
 		(pad "5" smd roundrect
@@ -599,6 +619,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/QSPI_SD0")
+			(pinfunction "DI/IO_{0}_5")
+			(pintype "bidirectional")
 			(uuid "8f8658a8-06ed-419c-b67d-aaacf2a91eb8")
 		)
 		(pad "6" smd roundrect
@@ -607,6 +629,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/QSPI_SCLK")
+			(pinfunction "CLK_6")
+			(pintype "input")
 			(uuid "99ee5c17-a16d-4aff-b60a-048fa08c4e49")
 		)
 		(pad "7" smd roundrect
@@ -615,6 +639,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/QSPI_SD3")
+			(pinfunction "~{HOLD}/~{RESET}/IO_{3}_7")
+			(pintype "bidirectional")
 			(uuid "3679fde5-133b-487a-9e01-8ed2dc3d3a5a")
 		)
 		(pad "8" smd roundrect
@@ -623,6 +649,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "+3V3")
+			(pinfunction "VCC_8")
+			(pintype "power_in")
 			(uuid "0d5fe99d-1f4e-4d58-ada7-01cc3a4d2797")
 		)
 		(embedded_fonts no)
@@ -731,9 +759,39 @@
 			)
 		)
 		(property ki_fp_filters "DIP*W7.62mm*")
-		(path "/c065b402-ce62-41d0-8fc9-ae0092fbeb45")
+		(path "/58aafc16-d0de-4203-ada0-63da300e91b9")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+			(unit
+				(name "B")
+				(pins "3" "4")
+			)
+			(unit
+				(name "C")
+				(pins "5" "6")
+			)
+			(unit
+				(name "D")
+				(pins "9" "8")
+			)
+			(unit
+				(name "E")
+				(pins "11" "10")
+			)
+			(unit
+				(name "F")
+				(pins "13" "12")
+			)
+			(unit
+				(name "G")
+				(pins "14" "7")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -958,6 +1016,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/UART0_TX")
+			(pintype "input")
 			(uuid "0757ca78-344d-49eb-9a42-c9a6639b2a6c")
 		)
 		(pad "2" smd roundrect
@@ -966,6 +1025,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/MIDI_TX")
+			(pintype "output")
 			(uuid "a920284b-b5f9-4af4-809d-803f63b01dc1")
 		)
 		(pad "3" smd roundrect
@@ -974,6 +1034,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/MIDI_TX")
+			(pintype "input")
 			(uuid "9e3f7a06-5e29-4f59-86f7-12f6aff71367")
 		)
 		(pad "4" smd roundrect
@@ -982,6 +1043,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "Net-(R14-Pad1)")
+			(pintype "output")
 			(uuid "95ef78e3-2085-4268-a917-226ddfb0997e")
 		)
 		(pad "5" smd roundrect
@@ -990,6 +1052,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/MIDI_TX")
+			(pintype "input")
 			(uuid "4cbfa355-6c90-4457-ab82-36f9d49d6849")
 		)
 		(pad "6" smd roundrect
@@ -998,6 +1061,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "Net-(R15-Pad1)")
+			(pintype "output")
 			(uuid "7ffc42cf-6615-4483-b934-bc25af509f6d")
 		)
 		(pad "7" smd roundrect
@@ -1006,6 +1070,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "GND")
+			(pinfunction "GND_7")
+			(pintype "power_in")
 			(uuid "9f1125fc-4835-457b-82cd-45dec9c26032")
 		)
 		(pad "8" smd roundrect
@@ -1014,6 +1080,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "Net-(R16-Pad1)")
+			(pintype "output")
 			(uuid "cc76d467-e021-4ae5-8f73-75e1681df0d7")
 		)
 		(pad "9" smd roundrect
@@ -1022,6 +1089,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/MIDI_TX")
+			(pintype "input")
 			(uuid "072a3b64-ddad-4378-9120-5f053e1e2f7b")
 		)
 		(pad "10" smd roundrect
@@ -1030,6 +1098,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "Net-(R17-Pad1)")
+			(pintype "output")
 			(uuid "940ab135-714b-48db-bd7e-4c3e2a734fd5")
 		)
 		(pad "11" smd roundrect
@@ -1038,6 +1107,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/MIDI_TX")
+			(pintype "input")
 			(uuid "48315a36-ce65-4442-9f36-0aab5b5e0db2")
 		)
 		(pad "12" smd roundrect
@@ -1046,6 +1116,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "Net-(R18-Pad1)")
+			(pintype "output")
 			(uuid "5a324d89-71a3-4573-a7b1-f0cd2f718f37")
 		)
 		(pad "13" smd roundrect
@@ -1054,6 +1125,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "/MIDI_TX")
+			(pintype "input")
 			(uuid "d6781b20-35b8-4049-95c3-ae280320805d")
 		)
 		(pad "14" smd roundrect
@@ -1062,6 +1134,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "+5V")
+			(pinfunction "VCC_14")
+			(pintype "power_in")
 			(uuid "c3312457-d1d8-43ce-82fa-79b4c6c2ef60")
 		)
 		(embedded_fonts no)
@@ -1160,6 +1234,15 @@
 		(path "/9ab9c3e5-2bc8-49fd-8f1a-06ada7588560")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "SH" "A1" "A12" "B1" "B12" "A4" "A9" "B4" "B9" "A5" "B5" "A7" "B7"
+					"A6" "B6" "A8" "B8"
+				)
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -4.7 -1.9)
@@ -1481,6 +1564,7 @@
 			(at -4.32 -3.13)
 			(size 1 2.1)
 			(drill oval 0.6 1.7)
+			(property pad_prop_mechanical)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
@@ -1492,6 +1576,7 @@
 			(at -4.32 1.05)
 			(size 1 1.6)
 			(drill oval 0.6 1.2)
+			(property pad_prop_mechanical)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
@@ -1503,6 +1588,7 @@
 			(at 4.32 -3.13)
 			(size 1 2.1)
 			(drill oval 0.6 1.7)
+			(property pad_prop_mechanical)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
@@ -1514,6 +1600,7 @@
 			(at 4.32 1.05)
 			(size 1 1.6)
 			(drill oval 0.6 1.2)
+			(property pad_prop_mechanical)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
@@ -1626,6 +1713,12 @@
 		(path "/7c95aba3-7b98-4254-bc60-0f7560613133")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "3" "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -1883,7 +1976,7 @@
 			(uuid "1ae4337a-f486-44bd-9874-43a7c16c8660")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(uuid "5075a265-332b-4744-979f-671e3d7943c0")
 			(effects
@@ -2016,6 +2109,12 @@
 		(path "/76cad59c-2896-4375-838e-025b63f71a6c")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2194,6 +2293,12 @@
 		(path "/8ec06246-4264-4d6c-b0dc-21a0a82bb757")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3")
+			)
+		)
 		(attr through_hole exclude_from_pos_files exclude_from_bom dnp)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2318,7 +2423,7 @@
 			(uuid "686180db-e30b-411d-b235-f1fc9509a666")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 2.54 -90)
+			(at 0 2.54 270)
 			(layer "F.Fab")
 			(uuid "3a0e9ff5-cb9c-41ff-affe-ffc603b5adbd")
 			(effects
@@ -2392,7 +2497,7 @@
 			)
 		)
 		(property "Value" "MIDI_OUT_3"
-			(at 0 1 -90)
+			(at 0 1 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -2405,7 +2510,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "ea0e33ab-1eda-4318-913f-6beadd477671")
@@ -2416,7 +2521,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 3 Poles (Stereo / TRS)"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "862d7ca2-05d9-4b72-b957-693d5bf3e19a")
@@ -2443,6 +2548,12 @@
 		(path "/9ee1a1df-3188-477e-a5fb-c7b991139e8a")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "S" "R" "T")
+			)
+		)
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_rect
@@ -2455,17 +2566,6 @@
 			(fill no)
 			(layer "F.SilkS")
 			(uuid "7875454e-0f93-4961-abe6-6ab6e459299c")
-		)
-		(fp_circle
-			(center -0.05 0)
-			(end 0.1 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill yes)
-			(layer "F.SilkS")
-			(uuid "344cd1b4-2390-4e16-84e7-94d79398c7aa")
 		)
 		(fp_rect
 			(start 0 -4.75)
@@ -2511,6 +2611,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J7-PadR)")
+			(pintype "passive")
 			(uuid "63795ebb-91c2-4519-b3b0-5b00278fb87a")
 		)
 		(pad "S" thru_hole oval
@@ -2520,6 +2621,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "e1279d6f-5d0d-46d3-9c4c-9199d1932fb0")
 		)
 		(pad "S" thru_hole oval
@@ -2529,6 +2631,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "fe0df469-dc78-484c-90cc-68a943e7e36b")
 		)
 		(pad "T" thru_hole oval
@@ -2538,6 +2641,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J7-PadT)")
+			(pintype "passive")
 			(uuid "0e0e36c8-62fe-4003-9982-8888afa8e12a")
 		)
 		(pad "T" thru_hole oval
@@ -2547,6 +2651,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J7-PadT)")
+			(pintype "passive")
 			(uuid "3b067193-5980-4b83-b50d-11afb8543646")
 		)
 		(embedded_fonts no)
@@ -2569,7 +2674,7 @@
 			)
 		)
 		(property "Value" "MIDI_OUT_4"
-			(at 0 1 -90)
+			(at 0 1 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -2582,7 +2687,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "951f5150-6f8c-4229-8d69-fb8616f09979")
@@ -2593,7 +2698,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 3 Poles (Stereo / TRS)"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "d7614a2e-936f-43f1-81ca-06bf1d901ab4")
@@ -2620,6 +2725,12 @@
 		(path "/a5286f1e-c67f-45b1-a8a7-e7287c65e91b")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "S" "R" "T")
+			)
+		)
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_rect
@@ -2632,17 +2743,6 @@
 			(fill no)
 			(layer "F.SilkS")
 			(uuid "46563409-d57c-4681-abde-360e7960a1d8")
-		)
-		(fp_circle
-			(center -0.05 0)
-			(end 0.1 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill yes)
-			(layer "F.SilkS")
-			(uuid "8bf57f90-b2ac-40ba-a7e0-897fcf752f9d")
 		)
 		(fp_rect
 			(start 0 -4.75)
@@ -2688,6 +2788,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J8-PadR)")
+			(pintype "passive")
 			(uuid "d9e4e052-f623-4e3c-ad4c-6c625921d90b")
 		)
 		(pad "S" thru_hole oval
@@ -2697,6 +2798,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "2b043119-0f2d-4fbb-a1a9-414209016a1f")
 		)
 		(pad "S" thru_hole oval
@@ -2706,6 +2808,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "e37dbc72-277e-4253-96ee-a9e55a338703")
 		)
 		(pad "T" thru_hole oval
@@ -2715,6 +2818,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J8-PadT)")
+			(pintype "passive")
 			(uuid "5155ac78-91ae-410a-b6a2-69591216cec0")
 		)
 		(pad "T" thru_hole oval
@@ -2724,6 +2828,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J8-PadT)")
+			(pintype "passive")
 			(uuid "439f6777-d0d2-42d8-b037-476d05509b35")
 		)
 		(embedded_fonts no)
@@ -2808,6 +2913,12 @@
 		(path "/0e3f712c-20e0-458a-92b3-d0459941239d")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2974,6 +3085,12 @@
 		(path "/d9808dd5-abe2-4b51-a3b1-8555411703ed")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3140,6 +3257,12 @@
 		(path "/74282acb-2430-4f72-9440-721cfa14e98a")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3245,7 +3368,7 @@
 			)
 		)
 		(property "Value" "H11L1"
-			(at 0 4.87 -90)
+			(at 0 4.87 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -3258,7 +3381,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.onsemi.com/pub/Collateral/H11L3M-D.PDF"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "3843129a-27ad-4955-b19e-62be3687abc8")
@@ -3269,7 +3392,7 @@
 			)
 		)
 		(property "Description" "Schmitt Trigger Output Optocoupler, High Speed, DIP-6, 1.6mA turn on threshold"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "25ac498f-1628-4f3a-be7f-1257b0660dba")
@@ -3321,6 +3444,13 @@
 		(path "/1064811b-1374-4909-9087-c6bc081eb456")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "6" "5" "4")
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -3.235 3.87)
@@ -3547,7 +3677,7 @@
 			)
 		)
 		(property "Value" "MIDI_IN_1"
-			(at 0 1 -90)
+			(at 0 1 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -3560,7 +3690,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "1d6db2cd-2252-4559-a565-b1c4b8f60e85")
@@ -3571,7 +3701,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 3 Poles (Stereo / TRS)"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "064712d1-d772-4ba0-a6bc-51a8e55dac59")
@@ -3598,6 +3728,13 @@
 		(path "/1c10691d-111e-4610-877e-cecf828ae576")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "S" "R" "T")
+			)
+		)
+		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_rect
 			(start 0.35 -4.4)
@@ -3609,17 +3746,6 @@
 			(fill no)
 			(layer "F.SilkS")
 			(uuid "947e354e-b61d-442d-8fac-286440d1cb21")
-		)
-		(fp_circle
-			(center -0.05 0)
-			(end 0.1 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill yes)
-			(layer "F.SilkS")
-			(uuid "d55ec374-5099-46d2-86a1-7a48b447b797")
 		)
 		(fp_rect
 			(start 0 -4.75)
@@ -3790,6 +3916,12 @@
 		(path "/912a734a-8dd8-4f94-b96f-83c7cfa7f53d")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3883,7 +4015,7 @@
 		(descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing)")
 		(tags "capacitor")
 		(property "Reference" "C6"
-			(at 0 -1.68 -90)
+			(at 0 -1.68 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -3896,7 +4028,7 @@
 			)
 		)
 		(property "Value" "10uF"
-			(at 0 1.68 -90)
+			(at 0 1.68 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -3909,7 +4041,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "a2e6d27d-f05d-4644-bfd0-9e6d79498228")
@@ -3920,7 +4052,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "c43f6a15-b720-4134-a51f-dac9ffcc0f97")
@@ -3944,7 +4076,7 @@
 			)
 		)
 		(property "LCSC" "C15850"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
@@ -3960,6 +4092,12 @@
 		(path "/3b2b0cd3-ad6d-46b6-a187-4c4d66361618")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4022,6 +4160,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "+3V3")
+			(pintype "passive")
 			(uuid "6375d36d-5317-4ca1-95d4-5b791d17dc9d")
 		)
 		(pad "2" smd roundrect
@@ -4030,6 +4169,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "GND")
+			(pintype "passive")
 			(uuid "4181ab8b-5376-403f-8ec0-91535c480d9b")
 		)
 		(embedded_fonts no)
@@ -4125,6 +4265,12 @@
 		(path "/2b2d3a25-98be-4092-bf37-7ac58c628d7a")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4291,6 +4437,12 @@
 		(path "/a7585a67-d51b-4910-bf36-596bcefc8a0d")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4457,6 +4609,12 @@
 		(path "/6402f4ab-a3bd-41ea-8332-c4e10fdf1675")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4625,6 +4783,13 @@
 		(path "/f309bc62-72c2-4300-9a4a-f17617771d09")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -2.75 -1)
@@ -5134,6 +5299,12 @@
 		(path "/479b2b8d-8c27-42ca-b32c-7e220f3847b5")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5300,6 +5471,12 @@
 		(path "/6d653988-e1d3-4810-88af-fc2596edde89")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5466,6 +5643,12 @@
 		(path "/d718b733-ea7b-4d8d-9513-45979bf05a57")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5632,6 +5815,12 @@
 		(path "/0e96df83-966b-416c-832c-cb789eb1a90c")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5798,6 +5987,12 @@
 		(path "/a7a66948-c485-410b-af22-a48bb465baee")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5954,6 +6149,13 @@
 		(path "/7cd35fbd-abaf-4731-9b58-1197a89d4ba7")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -2.36 1)
@@ -6260,6 +6462,12 @@
 		(path "/5035c344-fcb5-4f2e-9b06-8702ed00e7e4")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6426,6 +6634,12 @@
 		(path "/579144c7-ccd2-438d-b1c6-6a1b9b2619a3")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6592,6 +6806,12 @@
 		(path "/6e88c7e4-ebb2-4488-aa02-fdaf996d66ec")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6758,6 +6978,12 @@
 		(path "/a3547342-9458-429a-b8ad-8939bb0f0bc4")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6924,6 +7150,12 @@
 		(path "/3f29a9c2-ca6c-47ff-8e9a-da77b16430cc")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -7090,6 +7322,12 @@
 		(path "/1c3135d2-2b84-4d38-a1e6-8c202c976601")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -7194,7 +7432,7 @@
 			)
 		)
 		(property "Value" "MIDI_OUT_5"
-			(at 0 1 -90)
+			(at 0 1 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -7207,7 +7445,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "356f0172-82a9-4b49-b2bb-889d8f303ca1")
@@ -7218,7 +7456,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 3 Poles (Stereo / TRS)"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "3a0abb00-6f59-4be3-9d9a-9f06cbac07e2")
@@ -7245,6 +7483,12 @@
 		(path "/b3f5d67d-b780-4264-b40c-388986444bcd")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "S" "R" "T")
+			)
+		)
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_rect
@@ -7257,17 +7501,6 @@
 			(fill no)
 			(layer "F.SilkS")
 			(uuid "064cf4f2-d720-4a29-b6b7-1b1292b957a6")
-		)
-		(fp_circle
-			(center -0.05 0)
-			(end 0.1 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill yes)
-			(layer "F.SilkS")
-			(uuid "76a97473-f3d9-4af2-93ef-fb612d1a9edd")
 		)
 		(fp_rect
 			(start 0 -4.75)
@@ -7313,6 +7546,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J9-PadR)")
+			(pintype "passive")
 			(uuid "cf48bd77-6efe-4d32-8566-115eaef54bb4")
 		)
 		(pad "S" thru_hole oval
@@ -7322,6 +7556,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "7d8b05a3-e905-4e83-baab-c04ff2eebff2")
 		)
 		(pad "S" thru_hole oval
@@ -7331,6 +7566,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "29290188-0cc2-44d3-a471-eab57eb2ff68")
 		)
 		(pad "T" thru_hole oval
@@ -7340,6 +7576,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J9-PadT)")
+			(pintype "passive")
 			(uuid "2cca4daf-54b9-4b15-9e5e-2d00b7ee5bfb")
 		)
 		(pad "T" thru_hole oval
@@ -7349,6 +7586,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J9-PadT)")
+			(pintype "passive")
 			(uuid "8605e3c6-417a-4dce-ab51-67989210aab8")
 		)
 		(embedded_fonts no)
@@ -7423,6 +7661,12 @@
 		(path "/fc021c87-5274-4968-b3c8-cda5dc76aa77")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins)
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_circle
 			(center 0 0)
@@ -7547,6 +7791,12 @@
 		(path "/4ef67b67-7c9c-476f-89e2-cb6fc901a102")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -7703,6 +7953,13 @@
 		(path "/260999a8-95db-406d-aeb8-168d0a6fa510")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -2.36 1)
@@ -7947,7 +8204,7 @@
 			)
 		)
 		(property "Value" "MIDI_OUT_1"
-			(at 0 1 -90)
+			(at 0 1 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -7960,7 +8217,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "6fe04ffa-1e0e-4422-a17b-ec7c3dbbb7e7")
@@ -7971,7 +8228,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 3 Poles (Stereo / TRS)"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "78d664d7-a3e3-496b-ba19-c2b199ab0858")
@@ -7998,6 +8255,12 @@
 		(path "/7b864fc8-4d60-4ab2-bed6-d445a8fab1d2")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "S" "R" "T")
+			)
+		)
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_rect
@@ -8010,17 +8273,6 @@
 			(fill no)
 			(layer "F.SilkS")
 			(uuid "b1485c47-eb91-453b-b3e0-ec0dd8089668")
-		)
-		(fp_circle
-			(center -0.05 0)
-			(end 0.1 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill yes)
-			(layer "F.SilkS")
-			(uuid "02a82f48-6594-47b5-bdab-59037e91078a")
 		)
 		(fp_rect
 			(start 0 -4.75)
@@ -8066,6 +8318,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J5-PadR)")
+			(pintype "passive")
 			(uuid "42943121-7bd7-4d3a-baf2-1852ca8321c4")
 		)
 		(pad "S" thru_hole oval
@@ -8075,6 +8328,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "1fa50aab-8e14-49e0-8768-fe9761973c1f")
 		)
 		(pad "S" thru_hole oval
@@ -8084,6 +8338,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "78aa3ddb-a406-4a50-ba37-405cf63335d8")
 		)
 		(pad "T" thru_hole oval
@@ -8093,6 +8348,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J5-PadT)")
+			(pintype "passive")
 			(uuid "fbf5d163-1f6f-4e15-84de-6af257a21771")
 		)
 		(pad "T" thru_hole oval
@@ -8102,6 +8358,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J5-PadT)")
+			(pintype "passive")
 			(uuid "b24580ad-1212-44e8-a8f9-cdf957aa9d5f")
 		)
 		(embedded_fonts no)
@@ -8176,6 +8433,12 @@
 		(path "/b8c0afa9-72da-4a13-a0b1-15353c58d566")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins)
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_circle
 			(center 0 0)
@@ -8300,6 +8563,12 @@
 		(path "/9dfef4be-9b28-4eb1-91b6-a4f16bcda784")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -8456,6 +8725,12 @@
 		(path "/4ae64b7e-44cc-43c9-b565-c5714b6275a6")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins)
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_circle
 			(center 0 0)
@@ -8580,6 +8855,12 @@
 		(path "/d15fdb62-ede3-43a4-8688-3ac5c1031d07")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -8761,6 +9042,12 @@
 		(path "/9495bae8-67c5-4615-b6f0-6c6ba5a3b5fb")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "4" "3")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -8824,6 +9111,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.208333)
 			(net "Net-(U5-XIN)")
+			(pinfunction "1_1")
+			(pintype "passive")
 			(uuid "0ca6a17a-ec42-4c5b-913b-9de097decbc2")
 		)
 		(pad "2" smd roundrect
@@ -8832,6 +9121,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.208333)
 			(net "GND")
+			(pinfunction "G_2")
+			(pintype "passive")
 			(uuid "351a6979-d69c-4cca-b46f-2b7f8849c3a7")
 		)
 		(pad "3" smd roundrect
@@ -8840,6 +9131,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.208333)
 			(net "Net-(C20-Pad1)")
+			(pinfunction "3_3")
+			(pintype "passive")
 			(uuid "26eb0fbf-46a9-4516-ba74-003b73983bd0")
 		)
 		(pad "4" smd roundrect
@@ -8848,6 +9141,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.208333)
 			(net "GND")
+			(pinfunction "G_4")
+			(pintype "passive")
 			(uuid "006b8a42-0d61-46f9-917c-224e5974d4f4")
 		)
 		(embedded_fonts no)
@@ -8870,7 +9165,7 @@
 		(descr "Capacitor SMD 0805 (2012 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf, https://docs.google.com/spreadsheets/d/1BsfQQcO9C6DZCsRaXUlFlo91Tg2WpOkGARC1WS5S8t0/edit?usp=sharing)")
 		(tags "capacitor")
 		(property "Reference" "C4"
-			(at 0 -1.68 -90)
+			(at 0 -1.68 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -8883,7 +9178,7 @@
 			)
 		)
 		(property "Value" "10uF"
-			(at 0 1.68 -90)
+			(at 0 1.68 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -8896,7 +9191,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "a3028b28-a5f0-4636-ade7-76affad29eb1")
@@ -8907,7 +9202,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "f77a53d1-7ed6-4969-a23c-735b92999e4c")
@@ -8931,7 +9226,7 @@
 			)
 		)
 		(property "LCSC" "C15850"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
@@ -8947,6 +9242,12 @@
 		(path "/5badf309-30cf-4b88-adc1-819bdb6c58fd")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -9009,6 +9310,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "+5V")
+			(pintype "passive")
 			(uuid "a02a351c-69f1-4029-b932-8489a5690aeb")
 		)
 		(pad "2" smd roundrect
@@ -9017,6 +9319,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "GND")
+			(pintype "passive")
 			(uuid "63b909b1-8e37-40b1-a947-0fcbce9a3890")
 		)
 		(embedded_fonts no)
@@ -9112,6 +9415,12 @@
 		(path "/0d9ffeb7-33fe-42c8-83db-956b4f224618")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -9216,7 +9525,7 @@
 			)
 		)
 		(property "Value" "MIDI_IN_2"
-			(at 0 1 -90)
+			(at 0 1 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -9229,7 +9538,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "dee71030-55b2-434e-9eab-ba8a20ade966")
@@ -9240,7 +9549,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 3 Poles (Stereo / TRS)"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "631b740a-ff09-4f92-b804-2edc0cdc4905")
@@ -9267,6 +9576,13 @@
 		(path "/97d77176-e0c4-4ffa-afc5-cc44415281e7")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "S" "R" "T")
+			)
+		)
+		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_rect
 			(start 0.35 -4.4)
@@ -9278,17 +9594,6 @@
 			(fill no)
 			(layer "F.SilkS")
 			(uuid "82f03983-e9e0-4529-b883-759a8331d3c3")
-		)
-		(fp_circle
-			(center -0.05 0)
-			(end 0.1 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill yes)
-			(layer "F.SilkS")
-			(uuid "e83911eb-b358-40cc-bc13-836686a7e211")
 		)
 		(fp_rect
 			(start 0 -4.75)
@@ -9449,6 +9754,12 @@
 		(path "/f9238a72-8482-4f75-8b69-c4d6ca035196")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins)
+			)
+		)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_circle
 			(center 0 0)
@@ -9575,6 +9886,13 @@
 		(path "/f0270dec-38fe-4ff7-bf26-966d9caaefdb")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -2.75 -1)
@@ -10084,6 +10402,12 @@
 		(path "/fbd69c89-1655-4934-b06c-e17b12b12b74")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -10250,6 +10574,12 @@
 		(path "/7ac1dc95-ed7e-4e94-b80c-6f6c76a8d9b6")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -10343,7 +10673,7 @@
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf)")
 		(tags "capacitor")
 		(property "Reference" "C5"
-			(at 0 -1.16 -90)
+			(at 0 -1.16 270)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "feffe898-6af8-405b-abee-0995fe91f33b")
@@ -10355,7 +10685,7 @@
 			)
 		)
 		(property "Value" "1uF"
-			(at 0 1.16 -90)
+			(at 0 1.16 270)
 			(layer "F.Fab")
 			(uuid "ed8054e3-e12c-4be1-98dd-303a7a1ba6a7")
 			(effects
@@ -10366,7 +10696,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "6ef9b903-4f2d-4862-99b8-21bce29c18b9")
@@ -10377,7 +10707,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "af2809de-f3cc-4350-9e08-c4003e0c2982")
@@ -10388,7 +10718,7 @@
 			)
 		)
 		(property "KiLib_Generator" "SMD_2terminal_chip_molded"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "86af70fe-8a35-42b6-95a5-031645051c9f")
@@ -10400,7 +10730,7 @@
 			)
 		)
 		(property "LCSC" "C52923"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
@@ -10416,6 +10746,12 @@
 		(path "/855d87a7-7ca1-4f3d-ad88-8959e92bcecf")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -10461,7 +10797,7 @@
 			(uuid "a403e6a3-9078-4e7d-98f5-f41eb58e16cb")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(uuid "2b21b638-168d-456f-befe-06e73f1556e7")
 			(effects
@@ -10582,6 +10918,12 @@
 		(path "/c32ae9ed-1316-4d62-873d-9083037c9987")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -10748,6 +11090,12 @@
 		(path "/96a00e3b-d6fd-41dc-9691-e0ccdbc39031")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -10852,7 +11200,7 @@
 			)
 		)
 		(property "Value" "MIDI_OUT_2"
-			(at 0 1 -90)
+			(at 0 1 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -10865,7 +11213,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "1b888d63-99ab-46bf-b60c-85d4777c5c55")
@@ -10876,7 +11224,7 @@
 			)
 		)
 		(property "Description" "Audio Jack, 3 Poles (Stereo / TRS)"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "a5ec477d-c493-4551-a70b-49e43e423e88")
@@ -10903,6 +11251,12 @@
 		(path "/6f45b429-853f-490e-806f-063122a81899")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "S" "R" "T")
+			)
+		)
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_rect
@@ -10915,17 +11269,6 @@
 			(fill no)
 			(layer "F.SilkS")
 			(uuid "627f2300-e9c7-42a3-89fd-497c5e9d4447")
-		)
-		(fp_circle
-			(center -0.05 0)
-			(end 0.1 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill yes)
-			(layer "F.SilkS")
-			(uuid "76bf7abb-8342-45e0-8373-d70782618dc5")
 		)
 		(fp_rect
 			(start 0 -4.75)
@@ -10971,6 +11314,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J6-PadR)")
+			(pintype "passive")
 			(uuid "f4cf5f86-d9f6-4f49-a5a9-3aecd4c9f47b")
 		)
 		(pad "S" thru_hole oval
@@ -10980,6 +11324,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "8072d8a8-fa8e-49ba-8332-bad7cff2869d")
 		)
 		(pad "S" thru_hole oval
@@ -10989,6 +11334,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "GND")
+			(pintype "passive")
 			(uuid "7ccb6177-68b5-4967-8d28-125e51b564f8")
 		)
 		(pad "T" thru_hole oval
@@ -10998,6 +11344,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J6-PadT)")
+			(pintype "passive")
 			(uuid "ece7b4f7-4db7-41a8-9ae6-587e1ffa3093")
 		)
 		(pad "T" thru_hole oval
@@ -11007,6 +11354,7 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "Net-(J6-PadT)")
+			(pintype "passive")
 			(uuid "d63e1493-944e-4585-8cf6-d74894492acc")
 		)
 		(embedded_fonts no)
@@ -11091,6 +11439,12 @@
 		(path "/d17cd196-513f-4bc8-80b4-5f411392bba2")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -11184,7 +11538,7 @@
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf)")
 		(tags "capacitor")
 		(property "Reference" "C3"
-			(at 0 -1.16 -90)
+			(at 0 -1.16 270)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "51454557-7efa-4ee7-ad53-8bf71e8f8ae6")
@@ -11196,7 +11550,7 @@
 			)
 		)
 		(property "Value" "1uF"
-			(at 0 1.16 -90)
+			(at 0 1.16 270)
 			(layer "F.Fab")
 			(uuid "c37c382b-df3f-499b-a465-f7eb6933ec94")
 			(effects
@@ -11207,7 +11561,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "53a6d000-f12d-420c-b6b8-5fef57c0a267")
@@ -11218,7 +11572,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "e94f840f-e8ca-4585-b8d0-57e2918474a4")
@@ -11229,7 +11583,7 @@
 			)
 		)
 		(property "KiLib_Generator" "SMD_2terminal_chip_molded"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "a1973a4e-a26a-41f7-a0c4-0d14cf450095")
@@ -11241,7 +11595,7 @@
 			)
 		)
 		(property "LCSC" "C52923"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
@@ -11257,6 +11611,12 @@
 		(path "/8774cd08-af3d-4915-ba52-9d3b8e4c491e")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -11302,7 +11662,7 @@
 			(uuid "510d1fc6-3491-47c9-a20f-0828ce94610d")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(uuid "3c2a5dce-744c-4a4d-abf2-63da8c6dd4f9")
 			(effects
@@ -11438,6 +11798,17 @@
 		(path "/3909ff7f-2339-4c84-b3d4-9827f8df5ff1")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "19" "26" "46" "47" "56" "52" "53" "55" "54" "51" "20" "21" "24"
+					"25" "48" "43" "49" "10" "42" "33" "1" "22" "57" "44" "45" "50" "23"
+					"2" "3" "4" "5" "6" "7" "8" "9" "11" "12" "13" "14" "15" "16" "17" "18"
+					"27" "28" "29" "30" "31" "32" "34" "35" "36" "37" "38" "39" "40" "41"
+				)
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start 3.61 3.61)
@@ -12447,6 +12818,12 @@
 		(path "/d1be1486-1625-4224-a048-6a6501b81d36")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -12629,6 +13006,12 @@
 		(path "/ac36191f-df09-4408-9ab2-212de5e032f5")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -12740,6 +13123,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "GND")
+			(pinfunction "K_1")
+			(pintype "passive")
 			(uuid "0fb78674-73f3-4631-b7b9-ce78226dabe5")
 		)
 		(pad "2" smd roundrect
@@ -12748,6 +13133,8 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net "Net-(D3-A)")
+			(pinfunction "A_2")
+			(pintype "passive")
 			(uuid "d2d32133-81f2-4971-935e-137e4b1cb3f4")
 		)
 		(embedded_fonts no)
@@ -12843,6 +13230,12 @@
 		(path "/dcf474ff-1754-44da-850f-dcf01320e892")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -13009,6 +13402,12 @@
 		(path "/7e2fda04-47a2-4370-80fb-459f2ea8ef4b")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -13175,6 +13574,12 @@
 		(path "/f5df08fb-e773-4bcc-bdec-9582d0cd82b4")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -13280,7 +13685,7 @@
 			)
 		)
 		(property "Value" "H11L1"
-			(at 0 4.87 -90)
+			(at 0 4.87 270)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(hide yes)
@@ -13293,7 +13698,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.onsemi.com/pub/Collateral/H11L3M-D.PDF"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "46fda917-815a-479a-88cc-1f90a01f8db1")
@@ -13304,7 +13709,7 @@
 			)
 		)
 		(property "Description" "Schmitt Trigger Output Optocoupler, High Speed, DIP-6, 1.6mA turn on threshold"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "84532aae-8cc3-4ba3-85cc-65acff9638e1")
@@ -13356,6 +13761,13 @@
 		(path "/eb75d1cb-61e2-42c8-9580-804e0cb974ec")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3" "6" "5" "4")
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -3.235 3.87)
@@ -13644,6 +14056,12 @@
 		(path "/5e9fd04e-5c47-40a6-8630-1b580c21485d")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -13810,6 +14228,12 @@
 		(path "/c3b71ccd-f29f-4280-8677-e39b521187d4")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -13976,6 +14400,12 @@
 		(path "/25443451-aa57-4b32-aecc-5bf602122893")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -14142,6 +14572,12 @@
 		(path "/f8935f97-9c20-443c-855f-8ab742a6ec64")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -14308,6 +14744,12 @@
 		(path "/04b5af90-ebdb-47f1-a511-da218c2a6c28")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -14474,6 +14916,12 @@
 		(path "/78b6d168-71f6-40c5-ba4d-1799fbd0248c")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -14640,6 +15088,12 @@
 		(path "/04f4231c-803d-41a9-a963-f97be3d11fd1")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
