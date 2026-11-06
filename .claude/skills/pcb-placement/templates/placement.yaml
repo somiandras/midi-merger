@@ -1,0 +1,64 @@
+# placement.yaml: placement intent for one board. Field reference: reference/constraint-schema.md
+# Units: mm and degrees. Origin: top-left corner of the Edge.Cuts bounding box, y grows downward.
+# Every ref, net, region and group below that starts with EX_ is an EXAMPLE: replace it with
+# the real one from your board, or delete the entry. validate.py rejects anything left over.
+
+board:
+  outline: edge_cuts        # the only option: the outline is read from Edge.Cuts
+  grid_mm: 0.25             # placer snaps positions to this grid
+  edge_clearance_mm: 0.5    # min courtyard-to-edge gap (fixed and locked parts exempt)
+  sides: [top]              # sides the placer may use: [top], [bottom] or [top, bottom]
+
+# Parts the placer never moves. Position is the footprint anchor point in KiCad; rot is
+# optional (omit to accept any rotation). Parts locked in KiCad are never moved either.
+fixed:
+  EX_J1: {x: 0.0, y: 15.0, rot: 90, note: "EXAMPLE: USB-C flush to left edge"}
+  EX_H1: {x: 3.0, y: 3.0, note: "EXAMPLE: mounting hole"}
+
+# Named rectangles [x0, y0, x1, y1], inside the board outline.
+regions:
+  EX_power: [30, 0, 50, 15]
+  EX_core: [15, 10, 35, 30]
+
+# Parts placed together. Each part belongs to at most one group. With a region, every
+# member's courtyard must lie inside it (hard).
+groups:
+  - name: EX_buck_3v3
+    region: EX_power
+    anchor: EX_U2             # recipe offsets are relative to this member
+    recipe: buck              # file reference/block-recipes/buck.md
+    roles: {CIN: EX_C5, L: EX_L1, COUT: EX_C6}   # recipe role -> member ref
+    members: [EX_U2, EX_L1, EX_C5, EX_C6]
+  - name: EX_mcu_core
+    region: EX_core
+    anchor: EX_U1
+    members: [EX_U1, EX_Y1, EX_C10, EX_C11]
+
+# Cap within max_mm of an IC pin (pin = pad number or symbol pin name). Soft unless hard: true.
+decoupling:
+  - {cap: EX_C10, ic: EX_U1, pin: "1", max_mm: 2.0}
+  - {auto: true, max_mm: 3.0}   # every other C<n> to the nearest U<n>/IC<n> pin on a shared supply net
+
+# Courtyard gap between two parts at most max_mm. Soft unless hard: true.
+proximity:
+  - {a: EX_Y1, b: EX_U1, max_mm: 5.0}
+
+# Courtyard gap between the members of two groups or regions at least min_mm.
+separation:
+  - {a: EX_power, b: EX_core, min_mm: 5.0, hard: true}
+
+# Extra weight on a net's wirelength (default weight 1). Net names as in KiCad, sheet path included.
+critical_nets:
+  - {net: /EX_SW, weight: 10}
+
+# Cost weights (these are the defaults).
+weights:
+  hpwl: 1.0
+  crossings: 2.0
+  decoupling: 20.0
+  proximity: 10.0
+  separation: 10.0
+
+# Optional. Regexes for power and ground nets, left out of wirelength and crossings.
+# Setting this replaces the built-in list (GND, VCC*, VDD*, +3V3, ...), so copy what you keep.
+# power_nets: ["GND", "\\+3V3", "VBUS"]

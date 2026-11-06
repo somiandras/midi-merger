@@ -7,11 +7,12 @@ Every section is optional; missing sections take the defaults below. Unknown key
 rejected so that a typo never silently turns a constraint off.
 """
 
+import re
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Discriminator, Field, Tag, ValidationError
 
 Side = Literal["top", "bottom"]
 
@@ -55,8 +56,23 @@ class FixedPart(StrictModel):
     note: str | None = None
 
 
+def _positive_size(rect: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    x0, y0, x1, y1 = rect
+    if x1 <= x0 or y1 <= y0:
+        raise ValueError("need x0 < x1 and y0 < y1")
+    return rect
+
+
+def _regex(pattern: str) -> str:
+    try:
+        re.compile(pattern)
+    except re.error as exc:
+        raise ValueError(f"not a valid regular expression: {exc}") from exc
+    return pattern
+
+
 # Rectangle [x0, y0, x1, y1] in the board frame.
-Region = tuple[float, float, float, float]
+Region = Annotated[tuple[float, float, float, float], AfterValidator(_positive_size)]
 
 
 class Group(StrictModel):
@@ -90,6 +106,23 @@ class DecouplingAuto(StrictModel):
     auto: Literal[True]
     max_mm: float = Field(gt=0)
     hard: bool = False
+
+
+_PAIR_TAG = "pair_rule"
+_AUTO_TAG = "auto_rule"
+
+
+def _decoupling_kind(value: object) -> str:
+    """Pick the rule model up front, so a broken rule reports only its own errors."""
+    if isinstance(value, DecouplingAuto) or (isinstance(value, dict) and "auto" in value):
+        return _AUTO_TAG
+    return _PAIR_TAG
+
+
+DecouplingRule = Annotated[
+    Annotated[DecouplingPair, Tag(_PAIR_TAG)] | Annotated[DecouplingAuto, Tag(_AUTO_TAG)],
+    Discriminator(_decoupling_kind),
+]
 
 
 class Proximity(StrictModel):
@@ -128,24 +161,55 @@ class Placement(StrictModel):
     fixed: dict[str, FixedPart] = {}
     regions: dict[str, Region] = {}
     groups: list[Group] = []
-    decoupling: list[DecouplingPair | DecouplingAuto] = []
+    decoupling: list[DecouplingRule] = []
     proximity: list[Proximity] = []
     separation: list[Separation] = []
     critical_nets: list[CriticalNet] = []
     weights: Weights = Weights()
-    power_nets: list[str] = list(DEFAULT_POWER_NET_PATTERNS)
+    power_nets: list[Annotated[str, AfterValidator(_regex)]] = list(DEFAULT_POWER_NET_PATTERNS)
 
-    @field_validator("regions")
-    @classmethod
-    def _regions_have_positive_size(cls, value: dict[str, Region]) -> dict[str, Region]:
-        for name, (x0, y0, x1, y1) in value.items():
-            if x1 <= x0 or y1 <= y0:
-                raise ValueError(f"region {name}: need x0 < x1 and y0 < y1")
-        return value
+
+class Problem(StrictModel):
+    """One thing wrong with placement.yaml, located by its field path (e.g. groups[0].members[2])."""
+
+    path: str
+    message: str
+    level: Literal["error", "warning"] = "error"
+
+    def line(self) -> str:
+        return f"{self.level}: {self.path}: {self.message}"
 
 
 class PlacementFileError(Exception):
-    """placement.yaml is missing, not YAML, or does not match the schema."""
+    """placement.yaml is missing, not YAML, or does not match the schema.
+
+    `problems` lists every schema error; it is empty when the file could not be read at all.
+    """
+
+    def __init__(self, message: str, problems: list[Problem] | None = None) -> None:
+        self.problems: list[Problem] = problems or []
+        details = "".join(f"\n  {p.line()}" for p in self.problems)
+        super().__init__(message + details)
+
+
+def _field_path(loc: tuple[int | str, ...]) -> str:
+    path = ""
+    for part in loc:
+        if isinstance(part, int):
+            path += f"[{part}]"
+        elif part not in (_PAIR_TAG, _AUTO_TAG):
+            path += f".{part}" if path else part
+    return path or "(top level)"
+
+
+def _schema_message(error_type: str, msg: str) -> str:
+    if error_type == "extra_forbidden":
+        return "unknown key"
+    return msg.removeprefix("Value error, ")
+
+
+def schema_problems(exc: ValidationError) -> list[Problem]:
+    return [Problem(path=_field_path(err["loc"]), message=_schema_message(err["type"], err["msg"])) for err in exc.errors()]
 
 
 def load_placement(path: Path) -> Placement:
@@ -156,10 +220,10 @@ def load_placement(path: Path) -> Placement:
     try:
         data: object = yaml.safe_load(text)
     except yaml.YAMLError as exc:
-        raise PlacementFileError(f"{path} is not valid YAML: {exc}") from exc
+        raise PlacementFileError(f"{path} is not valid YAML", [Problem(path="(yaml)", message=" ".join(str(exc).split()))]) from exc
     if data is None:
         data = {}
     try:
         return Placement.model_validate(data)
     except ValidationError as exc:
-        raise PlacementFileError(f"{path} does not match the placement schema:\n{exc}") from exc
+        raise PlacementFileError(f"{path} does not match the placement schema", schema_problems(exc)) from exc

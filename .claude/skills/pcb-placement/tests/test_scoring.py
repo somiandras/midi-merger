@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from board_model import BoardData, FootprintData, PadData, Pose, to_board, to_local
+from board_model import BoardData, Pose, to_board, to_local
 from constraints import (
     CriticalNet,
     DecouplingAuto,
@@ -21,45 +21,7 @@ from constraints import (
 )
 from metrics import exit_code, report
 from scoring import HARD_PENALTY, ConstraintError, CostTerms, cost, score
-
-PadSpec = tuple[str, str, float, float]
-
-
-def part(
-    ref: str,
-    x: float,
-    y: float,
-    w: float = 2.0,
-    h: float = 1.0,
-    pads: list[PadSpec] | None = None,
-    rot: float = 0.0,
-    side: str = "top",
-    locked: bool = False,
-) -> FootprintData:
-    """A footprint with a w x h courtyard centred on its position."""
-    ring = [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2), (-w / 2, -h / 2)]
-    return FootprintData(
-        ref=ref,
-        pose=Pose(x=x, y=y, rot=rot),
-        side="bottom" if side == "bottom" else "top",
-        locked=locked,
-        pads=[PadData(number=n, pin_name="", net=net, x=px, y=py) for n, net, px, py in pads or []],
-        courtyard=[ring],
-        courtyard_from_pads=False,
-    )
-
-
-def board(*footprints: FootprintData, w: float = 50.0, h: float = 40.0, holes: list[list[tuple[float, float]]] | None = None) -> BoardData:
-    return BoardData(
-        path="test.kicad_pcb",
-        origin_x_nm=0,
-        origin_y_nm=0,
-        width_mm=w,
-        height_mm=h,
-        outline=[(0, 0), (w, 0), (w, h), (0, h), (0, 0)],
-        holes=holes or [],
-        footprints=list(footprints),
-    )
+from synthetic import board, part
 
 
 def test_rotation_follows_kicad_convention() -> None:
@@ -96,11 +58,6 @@ def test_power_net_patterns_can_be_overridden() -> None:
         part("R2", 20, 10, pads=[("1", "/SIG", 0, 0), ("2", "GND", 1, 0)]),
     )
     assert score(b, Placement(power_nets=[r"/?SIG"])).soft.hpwl_mm == pytest.approx(10)
-
-
-def test_unknown_critical_net_is_an_input_error() -> None:
-    with pytest.raises(ConstraintError):
-        score(board(part("R1", 10, 10)), Placement(critical_nets=[CriticalNet(net="/NOPE", weight=2)]))
 
 
 def test_crossings_count_intersecting_mst_segments_of_different_nets() -> None:
@@ -185,23 +142,12 @@ def test_region_containment() -> None:
     assert s.hard.region[0].outside_mm == pytest.approx(0.8)
 
 
-def test_region_must_be_defined() -> None:
-    p = Placement(groups=[Group(name="g", region="nowhere", members=["R1"])])
-    with pytest.raises(ConstraintError):
-        score(board(part("R1", 10, 10)), p)
-
-
 def test_fixed_moved_compares_position_and_rotation_modulo_360() -> None:
     b = board(part("J1", 5, 5, rot=-90), part("H1", 3, 3))
     p = Placement(fixed={"J1": FixedPart(x=5, y=5, rot=270), "H1": FixedPart(x=3, y=4)})
     s = score(b, p)
     assert [v.ref for v in s.hard.fixed_moved] == ["H1"]
     assert s.hard.fixed_moved[0].moved_mm == pytest.approx(1.0)
-
-
-def test_fixed_part_must_exist() -> None:
-    with pytest.raises(ConstraintError):
-        score(board(part("R1", 10, 10)), Placement(fixed={"J9": FixedPart(x=0, y=0)}))
 
 
 def ic_and_caps() -> BoardData:
@@ -228,12 +174,6 @@ def test_decoupling_pin_matches_symbol_pin_name() -> None:
     b = b.model_copy(update={"footprints": [named, *b.footprints[1:]]})
     p = Placement(decoupling=[DecouplingPair(cap="C12", ic="U1", pin="VDD", max_mm=5.0)])
     assert score(b, p).soft.decoupling == []
-
-
-def test_decoupling_without_shared_net_is_an_input_error() -> None:
-    p = Placement(decoupling=[DecouplingPair(cap="C12", ic="U1", pin="3", max_mm=2.0)])
-    with pytest.raises(ConstraintError):
-        score(ic_and_caps(), p)
 
 
 def test_decoupling_auto_pairs_remaining_caps_on_supply_net() -> None:

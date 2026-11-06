@@ -27,7 +27,8 @@ from pydantic import BaseModel, ValidationError
 from board_io import BoardIOError, open_board, read_board
 from board_model import BoardData
 from constraints import Placement, PlacementFileError, load_placement
-from scoring import ConstraintError, Score, score
+from scoring import Score, score
+from validate import check
 
 WORST_ITEMS = 10
 STATE_DIR = ".placement"
@@ -194,10 +195,16 @@ def main() -> int:
     try:
         placement = load_placement(args.placement)
         board = read_board(open_board(args.board, args.socket))
-        result = score(board, placement)
-    except (PlacementFileError, BoardIOError, ConstraintError) as exc:
+    except (PlacementFileError, BoardIOError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    problems = check(board, placement)
+    if problems:
+        print(f"error: {args.placement} does not fit the board (run validate.py):", file=sys.stderr)
+        for p in problems:
+            print(f"  {p.line()}", file=sys.stderr)
+        return 2
+    result = score(board, placement)
 
     state = args.placement.resolve().parent / STATE_DIR
     baseline_path = state / BASELINE_FILE

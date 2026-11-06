@@ -3,6 +3,9 @@
 Pure geometry with no KiCad access, so the placer can score candidate poses in memory.
 All lengths are millimetres in the board frame (see board_model).
 
+`score` expects a placement that `validate.check` accepts for the same board: every part,
+pin, net, region and group it names exists. It does not re-check this on every call.
+
 Definitions:
 - HPWL: per net, half the perimeter of the bounding box of its pad centres. Power and
   ground nets (placement.power_nets) are left out unless listed under critical_nets.
@@ -44,7 +47,7 @@ IC_REF = re.compile(r"(U|IC)\d+")
 
 
 class ConstraintError(Exception):
-    """placement.yaml names a part, pin, net, region or group the board does not have."""
+    """Poses were given for parts the board does not have."""
 
 
 class Result(BaseModel):
@@ -187,11 +190,18 @@ class _Placed:
     def pad_point(self, ref: str, pad: PadData) -> Point:
         return to_board(self.poses[ref], (pad.x, pad.y))
 
-    def require(self, ref: str, what: str) -> FootprintData:
-        fp = self.footprints.get(ref)
-        if fp is None:
-            raise ConstraintError(f"{what}: {ref} is not on the board")
-        return fp
+
+def find_pins(ic: FootprintData, pin: str) -> list[PadData]:
+    """Pads of `ic` matching `pin`: by pad number first, then by symbol pin name."""
+    return [p for p in ic.pads if p.number == pin] or [p for p in ic.pads if p.pin_name == pin]
+
+
+def named_members(name: str, placement: Placement) -> list[str]:
+    """Members of the group called `name`, else of every group in the region called `name`."""
+    for group in placement.groups:
+        if group.name == name:
+            return group.members
+    return [ref for g in placement.groups if g.region == name for ref in g.members]
 
 
 def _mst_segments(pts: Sequence[Point]) -> list[tuple[Point, Point]]:
@@ -252,6 +262,11 @@ def _overlaps(placed: _Placed) -> list[Overlap]:
     return found
 
 
+def courtyard_overlaps(board: BoardData, poses: Mapping[str, Pose]) -> list[Overlap]:
+    """Courtyard overlaps with footprints at `poses` (missing refs keep their board pose)."""
+    return _overlaps(_Placed(board, poses))
+
+
 def _vertices(geom: BaseGeometry) -> list[Point]:
     polys = list(geom.geoms) if isinstance(geom, MultiPolygon) else [geom]
     return [(x, y) for poly in polys if isinstance(poly, Polygon) for x, y in poly.exterior.coords]
@@ -284,12 +299,8 @@ def _regions(placed: _Placed, placement: Placement) -> list[RegionViolation]:
     for group in placement.groups:
         if group.region is None:
             continue
-        rect = placement.regions.get(group.region)
-        if rect is None:
-            raise ConstraintError(f"group {group.name}: region {group.region} is not defined")
-        area = box(*rect)
+        area = box(*placement.regions[group.region])
         for ref in group.members:
-            placed.require(ref, f"group {group.name}")
             geom = placed.courtyards[ref]
             if geom.is_empty or area.covers(geom):
                 continue
@@ -300,7 +311,6 @@ def _regions(placed: _Placed, placement: Placement) -> list[RegionViolation]:
 def _fixed_moved(placed: _Placed, placement: Placement) -> list[FixedMoved]:
     found: list[FixedMoved] = []
     for ref, fixed in sorted(placement.fixed.items()):
-        placed.require(ref, "fixed")
         pose = placed.poses[ref]
         moved = math.hypot(pose.x - fixed.x, pose.y - fixed.y)
         rot_delta = 0.0 if fixed.rot is None else (pose.rot - fixed.rot + 180.0) % 360.0 - 180.0
@@ -313,20 +323,14 @@ def _decoupling(placed: _Placed, placement: Placement, ground: Sequence[re.Patte
     found: list[DecouplingViolation] = []
     explicit = [rule for rule in placement.decoupling if isinstance(rule, DecouplingPair)]
     for rule in explicit:
-        cap = placed.require(rule.cap, "decoupling")
-        ic = placed.require(rule.ic, "decoupling")
-        pins = [p for p in ic.pads if p.number == rule.pin] or [p for p in ic.pads if p.pin_name == rule.pin]
-        if not pins:
-            raise ConstraintError(f"decoupling: {rule.ic} has no pin {rule.pin}")
-        pairs = [
+        cap = placed.footprints[rule.cap]
+        ic = placed.footprints[rule.ic]
+        dist = min(
             math.dist(placed.pad_point(cap.ref, cp), placed.pad_point(ic.ref, ip))
-            for ip in pins
+            for ip in find_pins(ic, rule.pin)
             for cp in cap.pads
             if cp.net and cp.net == ip.net
-        ]
-        if not pairs:
-            raise ConstraintError(f"decoupling: {rule.cap} shares no net with {rule.ic} pin {rule.pin}")
-        dist = min(pairs)
+        )
         if dist > rule.max_mm:
             found.append(DecouplingViolation(cap=rule.cap, ic=rule.ic, pin=rule.pin, dist_mm=dist, max_mm=rule.max_mm, hard=rule.hard))
 
@@ -354,34 +358,18 @@ def _decoupling(placed: _Placed, placement: Placement, ground: Sequence[re.Patte
 def _proximity(placed: _Placed, placement: Placement) -> list[ProximityViolation]:
     found: list[ProximityViolation] = []
     for rule in placement.proximity:
-        placed.require(rule.a, "proximity")
-        placed.require(rule.b, "proximity")
         dist = placed.courtyards[rule.a].distance(placed.courtyards[rule.b])
         if dist > rule.max_mm:
             found.append(ProximityViolation(a=rule.a, b=rule.b, dist_mm=dist, max_mm=rule.max_mm, hard=rule.hard))
     return found
 
 
-def _members(name: str, placement: Placement) -> list[str]:
-    groups = {g.name: g for g in placement.groups}
-    if name in groups and name in placement.regions:
-        raise ConstraintError(f"separation: {name} is both a group and a region")
-    if name in groups:
-        return groups[name].members
-    if name in placement.regions:
-        return [ref for g in placement.groups if g.region == name for ref in g.members]
-    raise ConstraintError(f"separation: {name} is neither a group nor a region")
-
-
 def _separation(placed: _Placed, placement: Placement) -> list[SeparationViolation]:
     found: list[SeparationViolation] = []
     for rule in placement.separation:
-        sides: list[BaseGeometry] = []
-        for name in (rule.a, rule.b):
-            refs = _members(name, placement)
-            for ref in refs:
-                placed.require(ref, f"separation {name}")
-            sides.append(unary_union([placed.courtyards[ref] for ref in refs]))
+        sides: list[BaseGeometry] = [
+            unary_union([placed.courtyards[ref] for ref in named_members(name, placement)]) for name in (rule.a, rule.b)
+        ]
         if sides[0].is_empty or sides[1].is_empty:
             continue
         dist = sides[0].distance(sides[1])
@@ -402,9 +390,6 @@ def score(board: BoardData, placement: Placement, poses: Mapping[str, Pose] | No
         for pad in fp.pads:
             if pad.net:
                 net_points.setdefault(pad.net, []).append(placed.pad_point(ref, pad))
-    missing = sorted(set(critical) - net_points.keys())
-    if missing:
-        raise ConstraintError(f"critical_nets: not on the board: {', '.join(missing)}")
 
     signal = {net: pts for net, pts in net_points.items() if not _matches(net, power)}
     hpwl: dict[str, float] = {}
