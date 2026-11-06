@@ -285,11 +285,33 @@
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "priority": 2147483647,
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 0.2,
+        "track_width": 0.25,
         "tuning_profile": "",
         "via_diameter": 0.6,
         "via_drill": 0.3,
         "wire_width": 6
+      },
+      {
+        "clearance": 0.2,
+        "name": "Fine",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": -1,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.2,
+        "tuning_profile": "",
+        "via_diameter": 0.6,
+        "via_drill": 0.3
+      },
+      {
+        "clearance": 0.2,
+        "name": "Power",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": -1,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.4,
+        "tuning_profile": "",
+        "via_diameter": 0.6,
+        "via_drill": 0.3
       }
     ],
     "meta": {
@@ -297,7 +319,92 @@
     },
     "net_colors": {},
     "netclass_assignments": {},
-    "netclass_patterns": []
+    "netclass_patterns": [
+      {
+        "netclass": "Power",
+        "pattern": "+5V"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "+3V3"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "+1V1"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "GND"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/QSPI_SCLK"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/QSPI_SD0"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/QSPI_SD1"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/QSPI_SD2"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/QSPI_SD3"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/QSPI_SS"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/SWCLK"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/SWDIO"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/UART0_TX"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/UART0_RX"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "/UART1_RX"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "Net-(U5-GPIO25)"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "Net-(U5-RUN)"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "Net-(U5-USB_DM)"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "Net-(U5-USB_DP)"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "Net-(U5-XIN)"
+      },
+      {
+        "netclass": "Fine",
+        "pattern": "Net-(U5-XOUT)"
+      }
+    ]
   },
   "pcbnew": {
     "last_paths": {
