@@ -54,6 +54,12 @@ class FootprintData(Frozen):
     courtyard: list[Ring]
     # True when the footprint has no courtyard and its pad bounding box plus a margin is used.
     courtyard_from_pads: bool
+    # Rectangles (local coordinates) of the through-hole pads and holes (plated or not): the
+    # larger of the copper and the drill. They pierce the board, so they block both sides.
+    through_holes: list[Ring] = []
+    # False when the board file has several outlines and this footprint's courtyard lies
+    # entirely outside the chosen one (see board_io.read_board).
+    on_board: bool = True
 
 
 class BoardData(Frozen):

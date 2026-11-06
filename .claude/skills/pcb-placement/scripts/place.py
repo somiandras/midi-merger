@@ -107,7 +107,7 @@ def main() -> int:
     try:
         placement = load_placement(args.placement)
         handle = open_board(args.board, args.socket)
-        board = read_board(handle)
+        board = read_board(handle, placement.board.outline_at)
     except (PlacementFileError, BoardIOError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -143,8 +143,9 @@ def main() -> int:
         if args.dry_run:
             result, data = measure(board, placement, args.placement, history=False, poses=outcome.poses)
         else:
-            apply_moves(handle, [Move(ref=m.ref, x=m.new.x, y=m.new.y, rot=m.new.rot) for m in record.moves], message=f"pcb-placement seed {args.seed}")
-            result, data = measure(read_board(handle), placement, args.placement)
+            moves = [Move(ref=m.ref, x=m.new.x, y=m.new.y, rot=m.new.rot) for m in record.moves]
+            apply_moves(handle, moves, (board.origin_x_nm, board.origin_y_nm), message=f"pcb-placement seed {args.seed}")
+            result, data = measure(read_board(handle, placement.board.outline_at), placement, args.placement)
         (run_dir / "metrics.json").write_text(json.dumps(data, indent=1) + "\n")
     except (OSError, ValidationError, BoardIOError) as exc:
         print(f"error: {exc}", file=sys.stderr)

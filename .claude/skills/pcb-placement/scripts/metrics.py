@@ -10,7 +10,8 @@ Prints a short text summary, or with --json one compact JSON object. Lists hold 
 items per category unless --full; `counts` gives every category's full size. --baseline
 stores this run's cost as the reference that later runs report as baseline_cost.
 
-Every run appends one line to .placement/history.jsonl next to PLACEMENT_YAML.
+Every run that scores the board (exit 0 or 1) appends one line to .placement/history.jsonl
+next to PLACEMENT_YAML; so does every place.py run that applies its moves.
 
 Exit codes: 0 no hard violations, 1 hard violations, 2 input error.
 """
@@ -27,7 +28,7 @@ from pydantic import BaseModel, ValidationError
 from board_io import BoardIOError, open_board, read_board
 from board_model import BoardData, Pose
 from constraints import Placement, PlacementFileError, load_placement
-from scoring import Score, score
+from scoring import Score, movable_refs, off_board_refs, score
 from validate import check
 
 WORST_ITEMS = 10
@@ -82,7 +83,12 @@ def _worst_first(s: Score) -> Score:
 
 def _messages(s: Score, placement: Placement) -> list[str]:
     """One line per violation, hard ones first, soft ones by their cost contribution."""
-    hard: list[str] = [f"{v.a} overlaps {v.b} by {v.depth_mm:.2f} mm" for v in s.hard.overlaps]
+    hard: list[str] = [
+        f"{v.a} overlaps {v.b} by {v.depth_mm:.2f} mm"
+        if v.kind == "courtyard"
+        else f"{v.b} courtyard covers through-hole pads of {v.a} by {v.depth_mm:.2f} mm"
+        for v in s.hard.overlaps
+    ]
     hard += [
         f"{v.ref} courtyard reaches {-v.clearance_mm:.2f} mm outside the board outline"
         if v.clearance_mm < 0
@@ -118,7 +124,6 @@ def _truncated(items: Json, full: bool) -> Json:
 def report(board: BoardData, placement: Placement, s: Score, baseline_cost: float | None, full: bool) -> dict[str, Json]:
     s = _worst_first(s)
     worst: list[Json] = list(_messages(s, placement))
-    movable = sum(1 for fp in board.footprints if not fp.locked and fp.ref not in placement.fixed)
     hard: dict[str, Json] = {
         "overlaps": _truncated(_dump_list(s.hard.overlaps), full),
         "edge": _truncated(_dump_list(s.hard.edge), full),
@@ -147,7 +152,8 @@ def report(board: BoardData, placement: Placement, s: Score, baseline_cost: floa
             "w_mm": round(board.width_mm, 3),
             "h_mm": round(board.height_mm, 3),
             "footprints": len(board.footprints),
-            "movable": movable,
+            "movable": len(movable_refs(board, placement)),
+            "off_board": len(off_board_refs(board, placement)),
         },
         "hard": hard,
         "soft": soft,
@@ -188,13 +194,14 @@ def state_dir(placement_path: Path) -> Path:
 
 
 def fit_problems(board: BoardData, placement: Placement, placement_path: Path) -> bool:
-    """Print `validate.check` errors to stderr; True when there were any."""
+    """Print `validate.check` problems to stderr; True when any is an error."""
     problems = check(board, placement)
-    if problems:
+    has_errors = any(p.level == "error" for p in problems)
+    if has_errors:
         print(f"error: {placement_path} does not fit the board (run validate.py):", file=sys.stderr)
-        for p in problems:
-            print(f"  {p.line()}", file=sys.stderr)
-    return bool(problems)
+    for p in problems:
+        print(f"  {p.line()}", file=sys.stderr)
+    return has_errors
 
 
 def measure(
@@ -252,7 +259,7 @@ def main() -> int:
 
     try:
         placement = load_placement(args.placement)
-        board = read_board(open_board(args.board, args.socket))
+        board = read_board(open_board(args.board, args.socket), placement.board.outline_at)
     except (PlacementFileError, BoardIOError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

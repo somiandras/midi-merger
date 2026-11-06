@@ -131,6 +131,19 @@ def test_fixed_part_checked_at_its_fixed_pose_not_its_board_pose() -> None:
     assert [p.path for p in check(b, together)] == ["fixed.J1"]
 
 
+def test_movable_list_refs_must_exist_and_not_be_fixed(tmp_path: Path) -> None:
+    assert problems_for("movable: [R1, R2]\n" + VALID, tmp_path) == []
+    problems = problems_for("movable: [R1, R9, J1]\n" + VALID, tmp_path)
+    assert [(p.path, p.level) for p in problems] == [("movable[1]", "error"), ("movable[2]", "error")]
+    assert "fixed" in problems[1].message
+
+
+def test_movable_list_warns_about_parts_that_cannot_move() -> None:
+    b = board(part("R1", 10, 10, locked=True), part("R2", 20, 10, side="bottom"), part("R3", 30, 10))
+    problems = check(b, Placement(movable=["R1", "R2", "R3"]))
+    assert [(p.path, p.level) for p in problems] == [("movable[0]", "warning"), ("movable[1]", "warning")]
+
+
 def test_fixed_part_may_also_be_a_group_member(tmp_path: Path) -> None:
     text = VALID.replace("members: [U1, C1]", "members: [U1, C1, J1]")
     assert problems_for(text, tmp_path) == []

@@ -10,14 +10,20 @@ the PCB open on the given socket is the file named on the command line, so a scr
 never touch a different board that happens to be open on that socket.
 
 Coordinates leaving this module are in the board frame of board_model (mm, degrees, origin
-at the top-left of the Edge.Cuts bounding box). KiCad's absolute nanometres stay inside.
+at the top-left of the bounding box of the chosen Edge.Cuts outline). KiCad's absolute
+nanometres stay inside.
+
+Edge.Cuts may hold several separate outlines (two boards side by side in one file). Then
+`outline_at`, a point in KiCad's absolute mm inside the wanted outline, picks one; without
+it read_board refuses and lists the outlines.
 
 kicad-python is pinned to 0.8.0 in every script header because this module works around
 kipy 0.8.0's KiCad 10 gaps (raw GetItems unpacking and a hand-built ReferencePoint message);
 drop the workaround, and the pin, once kipy supports KiCad 10.
 
-CLI:
-    board_io.py BOARD [--socket URL] read          print footprint poses as JSON
+CLI (--outline-at X Y picks the outline when there are several):
+    board_io.py BOARD [--socket URL] read          outlines, frame origin and footprint poses as JSON
+    board_io.py BOARD [--socket URL] nets          every footprint's pads: number, pin name, net
     board_io.py BOARD [--socket URL] move FILE     apply [{ref, x, y, rot}, ...] in one undo step
 """
 
@@ -28,6 +34,7 @@ import sys
 from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Literal
 
 from google.protobuf import descriptor_pb2, descriptor_pool, message_factory
 from google.protobuf.any_pb2 import Any as AnyProto
@@ -49,6 +56,7 @@ from kipy.proto.common.types import DocumentType, KiCadObjectType, base_types_pb
 from pydantic import TypeAdapter, ValidationError
 from shapely import MultiPoint, MultiPolygon, Polygon, unary_union
 from shapely.geometry import LineString
+from shapely.geometry import Point as ShapelyPoint
 from shapely.ops import polygonize
 
 from board_model import BoardData, FootprintData, Move, PadData, Point, Pose, Ring, rotate, to_local
@@ -240,13 +248,52 @@ def _polygons(geom: Polygon | MultiPolygon) -> list[Polygon]:
     return list(geom.geoms) if isinstance(geom, MultiPolygon) else [geom]
 
 
-def _read_outline(board: Board) -> Polygon:
-    """Board outline in absolute mm, mounting-hole cutouts as holes."""
-    lines = [line for shape in board.get_shapes() if shape.layer == BoardLayer.BL_Edge_Cuts for line in _shape_lines(shape.proto.shape)]
+def read_outlines(board: Board) -> list[Polygon]:
+    """Separate board outlines in absolute mm (see outer_faces)."""
+    with _kicad_errors("reading the board outline from KiCad"):
+        shapes = board.get_shapes()
+    return outer_faces([line for shape in shapes if shape.layer == BoardLayer.BL_Edge_Cuts for line in _shape_lines(shape.proto.shape)])
+
+
+def outer_faces(lines: Iterable[list[Point]]) -> list[Polygon]:
+    """Separate outlines formed by the line work, cutouts as holes, ordered left to right.
+
+    The faces that fill a cutout are dropped: a face counts only when it lies inside no
+    other face's outer ring.
+    """
     faces = _faces(lines)
     if not faces:
         raise BoardIOError("Edge.Cuts does not form a closed outline")
-    return max(faces, key=lambda face: face.area)
+    shells = [Polygon(face.exterior) for face in faces]
+    outer = [
+        face
+        for i, face in enumerate(faces)
+        if not any(j != i and shells[j].area > shells[i].area and shells[j].contains(face.representative_point()) for j in range(len(faces)))
+    ]
+    return sorted(outer, key=lambda face: (face.bounds[0], face.bounds[1]))
+
+
+def _outline_line(face: Polygon) -> str:
+    x0, y0, x1, y1 = face.bounds
+    px, py = face.representative_point().coords[0]
+    return f"x {x0:.2f} to {x1:.2f}, y {y0:.2f} to {y1:.2f} (KiCad mm); to pick it, add under board:  outline_at: [{px:.3f}, {py:.3f}]"
+
+
+def choose_outline(faces: Sequence[Polygon], outline_at: Point | None) -> Polygon:
+    """The outline containing `outline_at`; the only outline when there is one and no point."""
+    listing = "".join(f"\n  outline {i + 1}: {_outline_line(face)}" for i, face in enumerate(faces))
+    if outline_at is None:
+        if len(faces) == 1:
+            return faces[0]
+        raise BoardIOError(
+            f"Edge.Cuts holds {len(faces)} separate outlines; placement.yaml must pick one with board.outline_at, "
+            f"a point inside it in KiCad's absolute coordinates (mm):{listing}"
+        )
+    point = ShapelyPoint(outline_at)
+    for face in faces:
+        if Polygon(face.exterior).covers(point):
+            return face
+    raise BoardIOError(f"board.outline_at {list(outline_at)} lies inside none of the Edge.Cuts outlines:{listing}")
 
 
 def _origin_nm(outline: Polygon) -> tuple[int, int]:
@@ -275,10 +322,14 @@ def _courtyard_shapes(fp: FootprintProto) -> list[base_types_pb2.GraphicShape]:
     return shapes
 
 
-def _pad_rectangle(pad: board_types_pb2.Pad) -> list[Point]:
-    """Corners (absolute mm) of the pad's largest copper shape, rotated with the pad."""
+def _pad_rectangle(pad: board_types_pb2.Pad, with_drill: bool = False) -> list[Point]:
+    """Corners (absolute mm) of the pad's largest copper shape, rotated with the pad;
+    with `with_drill`, at least as large as the drilled hole."""
     width = max((layer.size.x_nm for layer in pad.pad_stack.copper_layers), default=0) / NM_PER_MM
     height = max((layer.size.y_nm for layer in pad.pad_stack.copper_layers), default=0) / NM_PER_MM
+    if with_drill:
+        width = max(width, pad.pad_stack.drill.diameter.x_nm / NM_PER_MM)
+        height = max(height, pad.pad_stack.drill.diameter.y_nm / NM_PER_MM)
     cx, cy = _mm(pad.position)
     angle = math.radians(pad.pad_stack.angle.value_degrees)
     cos_a, sin_a = math.cos(angle), math.sin(angle)
@@ -308,9 +359,18 @@ def _courtyard(fp: FootprintProto, pads: Sequence[board_types_pb2.Pad]) -> tuple
     return [box], True
 
 
-def _footprint_data(fp: FootprintProto, origin: Point) -> FootprintData:
+def _abs_pose(fp: FootprintProto) -> Pose:
+    return Pose(x=fp.position.x_nm / NM_PER_MM, y=fp.position.y_nm / NM_PER_MM, rot=fp.orientation.value_degrees)
+
+
+def _side(fp: FootprintProto) -> Literal["top", "bottom"]:
+    return "bottom" if fp.layer == BoardLayer.BL_B_Cu else "top"
+
+
+def footprint_data(fp: FootprintProto, origin: Point, shell: Polygon | None) -> FootprintData:
+    """Footprint in the board frame at `origin`; off the board when it misses `shell` (None: on it)."""
     ox, oy = origin
-    abs_pose = Pose(x=fp.position.x_nm / NM_PER_MM, y=fp.position.y_nm / NM_PER_MM, rot=fp.orientation.value_degrees)
+    abs_pose = _abs_pose(fp)
     pads = _pads(fp)
     courtyard, from_pads = _courtyard(fp, pads)
     pad_data: list[PadData] = []
@@ -318,24 +378,41 @@ def _footprint_data(fp: FootprintProto, origin: Point) -> FootprintData:
         lx, ly = to_local(abs_pose, _mm(pad.position))
         pad_data.append(PadData(number=pad.number, pin_name=pad.symbol_pin.name, net=pad.net.name, x=lx, y=ly))
     rings: list[Ring] = [[to_local(abs_pose, (x, y)) for x, y in poly.exterior.coords] for poly in courtyard]
+    holes: list[Ring] = [
+        [to_local(abs_pose, p) for p in _pad_rectangle(pad, with_drill=True)]
+        for pad in pads
+        if pad.type in (board_types_pb2.PadType.PT_PTH, board_types_pb2.PadType.PT_NPTH)
+    ]
+    on_board = True
+    if shell is not None:
+        on_board = any(shell.intersects(poly) for poly in courtyard) if courtyard else shell.covers(ShapelyPoint(abs_pose.x, abs_pose.y))
     return FootprintData(
         ref=_ref(fp),
         pose=Pose(x=abs_pose.x - ox, y=abs_pose.y - oy, rot=abs_pose.rot),
-        side="bottom" if fp.layer == BoardLayer.BL_B_Cu else "top",
+        side=_side(fp),
         locked=fp.locked == base_types_pb2.LockedState.LS_LOCKED,
         pads=pad_data,
         courtyard=rings,
         courtyard_from_pads=from_pads,
+        through_holes=holes,
+        on_board=on_board,
     )
 
 
-def read_board(board: Board) -> BoardData:
+def read_board(board: Board, outline_at: Point | None = None) -> BoardData:
+    """The board in the frame of its outline (see choose_outline for `outline_at`).
+
+    With several outlines, footprints whose courtyard misses the chosen one are flagged
+    `on_board=False`.
+    """
+    faces = read_outlines(board)
+    outline = choose_outline(faces, outline_at)
     with _kicad_errors("reading the board from KiCad"):
-        outline = _read_outline(board)
         footprints = _footprint_protos(board)
     origin_nm = _origin_nm(outline)
     origin = (origin_nm[0] / NM_PER_MM, origin_nm[1] / NM_PER_MM)
     min_x, min_y, max_x, max_y = outline.bounds
+    shell = Polygon(outline.exterior) if len(faces) > 1 else None
 
     def shift(coords: Iterable[tuple[float, ...]]) -> Ring:
         return [(c[0] - origin[0], c[1] - origin[1]) for c in coords]
@@ -349,7 +426,7 @@ def read_board(board: Board) -> BoardData:
         height_mm=max_y - min_y,
         outline=shift(outline.exterior.coords),
         holes=[shift(hole.coords) for hole in outline.interiors],
-        footprints=[_footprint_data(fp, origin) for fp in footprints],
+        footprints=[footprint_data(fp, origin, shell) for fp in footprints],
     )
 
 
@@ -503,10 +580,12 @@ def _moved(fp: FootprintProto, x_nm: int, y_nm: int, rot: float) -> FootprintPro
     return moved
 
 
-def apply_moves(board: Board, moves: Sequence[Move], message: str = "pcb-placement") -> None:
+def apply_moves(board: Board, moves: Sequence[Move], origin_nm: tuple[int, int], message: str = "pcb-placement") -> None:
     """Move footprints in one KiCad commit, so a single undo reverts all of them.
 
-    Refuses, before changing anything, if a ref is unknown, repeated, or locked in KiCad.
+    Move coordinates are in the board frame whose origin is `origin_nm` (BoardData.origin_x_nm,
+    origin_y_nm of the same board). Refuses, before changing anything, if a ref is unknown,
+    repeated, or locked in KiCad.
     """
     refs = [move.ref for move in moves]
     repeated = sorted({ref for ref in refs if refs.count(ref) > 1})
@@ -514,7 +593,6 @@ def apply_moves(board: Board, moves: Sequence[Move], message: str = "pcb-placeme
         raise BoardIOError(f"moved more than once: {', '.join(repeated)}")
     with _kicad_errors("reading the board from KiCad"):
         by_ref = {_ref(fp): fp for fp in _footprint_protos(board)}
-        outline = _read_outline(board)
     unknown = sorted(set(refs) - by_ref.keys())
     if unknown:
         raise BoardIOError(f"not on the board: {', '.join(unknown)}")
@@ -522,7 +600,7 @@ def apply_moves(board: Board, moves: Sequence[Move], message: str = "pcb-placeme
     if locked:
         raise BoardIOError(f"locked in KiCad, refusing to move: {', '.join(locked)}")
 
-    origin_x, origin_y = _origin_nm(outline)
+    origin_x, origin_y = origin_nm
     cmd = UpdateItems()
     cmd.header.document.CopyFrom(board.document)
     for move in moves:
@@ -553,34 +631,88 @@ def apply_moves(board: Board, moves: Sequence[Move], message: str = "pcb-placeme
         board.push_commit(commit, message)
 
 
+def _read_json(board: Board, outline_at: Point | None) -> dict[str, object]:
+    """Outlines, frame origin and footprint poses. With several outlines and no `outline_at`,
+    poses are in KiCad's absolute coordinates ("frame": "kicad") instead of the board frame."""
+    faces = read_outlines(board)
+    chosen = None if outline_at is None and len(faces) > 1 else choose_outline(faces, outline_at)
+    outlines = [
+        {"kicad_mm": [round(v, 3) for v in face.bounds], "chosen": face is chosen, "outline_at": [round(v, 3) for v in face.representative_point().coords[0]]}
+        for face in faces
+    ]
+    if chosen is None:
+        with _kicad_errors("reading the board from KiCad"):
+            protos = _footprint_protos(board)
+        footprints: list[dict[str, object]] = []
+        for fp in protos:
+            pose = _abs_pose(fp)
+            locked = fp.locked == base_types_pb2.LockedState.LS_LOCKED
+            footprints.append({"ref": _ref(fp), "x": round(pose.x, 4), "y": round(pose.y, 4), "rot": pose.rot, "side": _side(fp), "locked": locked})
+        return {
+            "outlines": outlines,
+            "frame": "kicad",
+            "note": "several outlines: poses are in KiCad mm; pass --outline-at X Y (or set board.outline_at) for the board frame",
+            "footprints": sorted(footprints, key=lambda f: str(f["ref"])),
+        }
+    data = read_board(board, outline_at)
+    several = len(faces) > 1
+    return {
+        "outlines": outlines,
+        "frame": "board",
+        "origin_kicad_mm": [data.origin_x_nm / NM_PER_MM, data.origin_y_nm / NM_PER_MM],
+        "board": {"w_mm": round(data.width_mm, 3), "h_mm": round(data.height_mm, 3)},
+        "footprints": [
+            {"ref": fp.ref, "x": round(fp.pose.x, 4), "y": round(fp.pose.y, 4), "rot": fp.pose.rot, "side": fp.side, "locked": fp.locked}
+            | ({"on_board": fp.on_board} if several else {})
+            for fp in sorted(data.footprints, key=lambda f: f.ref)
+        ],
+    }
+
+
+def nets_line(fp: FootprintProto) -> str:
+    """Ref, value, footprint name, side, then number=net for each pad ('-' for no net).
+    A pad whose symbol pin name differs from its number shows as number(name)=net."""
+    pads: list[str] = []
+    for pad in _pads(fp):
+        name = pad.symbol_pin.name
+        label = pad.number if not name or name == pad.number else f"{pad.number}({name})"
+        pads.append(f"{label}={pad.net.name or '-'}")
+    lib = fp.definition.id
+    return f"{_ref(fp)} {fp.value_field.text.text.text} [{lib.library_nickname}:{lib.entry_name}] {_side(fp)}: {' '.join(pads)}"
+
+
+def _nets_text(board: Board) -> str:
+    with _kicad_errors("reading the board from KiCad"):
+        protos = sorted(_footprint_protos(board), key=_ref)
+    return "\n".join(nets_line(fp) for fp in protos)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("board", type=Path, help="path of the .kicad_pcb open in KiCad")
     parser.add_argument("--socket", default=None, help="KiCad IPC socket, e.g. ipc:///tmp/kicad/api-1234.sock")
+    parser.add_argument(
+        "--outline-at", nargs=2, type=float, metavar=("X", "Y"), default=None, help="point inside the wanted Edge.Cuts outline, KiCad mm"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("read", help="print footprint poses (board frame) as JSON")
+    sub.add_parser("read", help="print outlines, frame origin and footprint poses as JSON")
+    sub.add_parser("nets", help="print each footprint's pads with pin name and net")
     move_parser = sub.add_parser("move", help="apply moves from a JSON file in one undo step")
     move_parser.add_argument("moves", type=Path, help="JSON list of {ref, x, y, rot}")
     args = parser.parse_args()
+    outline_at: Point | None = None if args.outline_at is None else (args.outline_at[0], args.outline_at[1])
 
     try:
         board = open_board(args.board, args.socket)
         if args.command == "read":
-            data = read_board(board)
-            print(
-                json.dumps(
-                    {
-                        "board": {"w_mm": round(data.width_mm, 3), "h_mm": round(data.height_mm, 3)},
-                        "footprints": [
-                            {"ref": fp.ref, "x": round(fp.pose.x, 4), "y": round(fp.pose.y, 4), "rot": fp.pose.rot, "side": fp.side, "locked": fp.locked}
-                            for fp in sorted(data.footprints, key=lambda f: f.ref)
-                        ],
-                    }
-                )
-            )
+            print(json.dumps(_read_json(board, outline_at)))
+            return 0
+        if args.command == "nets":
+            print(_nets_text(board))
             return 0
         moves = TypeAdapter(list[Move]).validate_json(Path(args.moves).read_text())
-        apply_moves(board, moves)
+        data = read_board(board, outline_at)
+        apply_moves(board, moves, (data.origin_x_nm, data.origin_y_nm))
         print(f"moved {len(moves)} footprints")
         return 0
     except (BoardIOError, OSError, ValidationError) as exc:

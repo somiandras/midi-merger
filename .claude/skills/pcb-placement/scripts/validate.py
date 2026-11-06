@@ -25,7 +25,7 @@ from board_io import BoardIOError, open_board, read_board
 from board_model import BoardData, FootprintData, Pose
 from constraints import DecouplingPair, Group, Placement, PlacementFileError, Problem, load_placement
 from recipes import Recipe, RecipeError, load_recipe
-from scoring import courtyard_overlaps, find_pins
+from scoring import courtyard_overlaps, find_pins, off_board_refs
 
 RECIPE_DIR = Path(__file__).resolve().parent.parent / "reference" / "block-recipes"
 # Regions may touch the outline; this absorbs rounding in the outline coordinates.
@@ -42,11 +42,12 @@ def _fixed_overlaps(board: BoardData, placement: Placement) -> list[Problem]:
     }
     immovable = set(poses) | {fp.ref for fp in board.footprints if fp.locked}
     problems: list[Problem] = []
-    for o in courtyard_overlaps(board, poses):
+    for o in courtyard_overlaps(board, poses, skip=off_board_refs(board, placement)):
         if o.a in immovable and o.b in immovable and (o.a in poses or o.b in poses):
             ref, other = (o.a, o.b) if o.a in poses else (o.b, o.a)
             how = "fixed" if other in poses else "locked in KiCad"
-            problems.append(Problem(path=f"fixed.{ref}", message=f"courtyard overlaps {other} ({how}) by {o.depth_mm:.2f} mm"))
+            what = "courtyard overlaps" if o.kind == "courtyard" else "courtyard and through-hole pads overlap"
+            problems.append(Problem(path=f"fixed.{ref}", message=f"{what} {other} ({how}) by {o.depth_mm:.2f} mm"))
     return problems
 
 
@@ -65,6 +66,16 @@ def check(board: BoardData, placement: Placement) -> list[Problem]:
 
     for ref in placement.fixed:
         require(f"fixed.{ref}", ref)
+    for i, ref in enumerate(placement.movable or []):
+        at = f"movable[{i}]"
+        if not require(at, ref):
+            continue
+        if ref in placement.fixed:
+            problems.append(Problem(path=at, message=f"{ref} is also under fixed; list it in one of the two"))
+        elif footprints[ref].locked:
+            problems.append(Problem(path=at, message=f"{ref} is locked in KiCad and will not move", level="warning"))
+        elif footprints[ref].side not in placement.board.sides:
+            problems.append(Problem(path=at, message=f"{ref} is on the {footprints[ref].side} side, not in board.sides; it will not move", level="warning"))
     problems += _fixed_overlaps(board, placement)
 
     outline = Polygon(board.outline)
@@ -191,7 +202,7 @@ def main() -> int:
 
     try:
         placement = load_placement(args.placement)
-        board = read_board(open_board(args.board, args.socket))
+        board = read_board(open_board(args.board, args.socket), placement.board.outline_at)
         problems = check(board, placement) + check_recipes(board, placement, RECIPE_DIR)
     except PlacementFileError as exc:
         if not exc.problems:

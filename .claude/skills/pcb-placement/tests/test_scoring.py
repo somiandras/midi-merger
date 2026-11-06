@@ -20,7 +20,7 @@ from constraints import (
     load_placement,
 )
 from metrics import exit_code, report
-from scoring import HARD_PENALTY, ConstraintError, CostTerms, cost, score
+from scoring import HARD_PENALTY, ConstraintError, CostTerms, cost, movable_refs, off_board_refs, score
 from synthetic import board, part
 
 
@@ -104,6 +104,49 @@ def test_overlap_depth_and_sides() -> None:
 
     other_side = board(part("C5", 10, 10, w=2, h=2), part("L1", 11, 10, w=2, h=2, side="bottom"))
     assert score(other_side, Placement()).hard.overlaps == []
+
+
+def test_through_hole_pads_block_courtyards_on_both_sides() -> None:
+    jack = [(-2.54, 0.0, 1.7), (0.0, 0.0, 1.7), (2.54, 0.0, 1.7)]
+    j1 = part("J1", 20, 20, w=8, h=3, side="bottom", holes=jack)
+    # A top part over the middle pad, on the other side.
+    over = score(board(j1, part("R1", 20, 20, w=1, h=0.5)), Placement())
+    assert [(o.a, o.b, o.kind) for o in over.hard.overlaps] == [("J1", "R1", "through_hole")]
+    assert over.terms.hard_violations == 1
+    # Pad edge at y 20.85, plus 0.25 mm clearance: 21.1. R1's top edge at 20.95 is inside it.
+    near = score(board(j1, part("R1", 20, 21.2, w=1, h=0.5)), Placement())
+    assert [o.kind for o in near.hard.overlaps] == ["through_hole"]
+    # R1's top edge at 21.15: clear.
+    clear = score(board(j1, part("R1", 20, 21.4, w=1, h=0.5)), Placement())
+    assert clear.hard.overlaps == []
+    # Same side: one courtyard overlap, not a second entry for the pads.
+    same = score(board(j1, part("R1", 20, 20, w=1, h=0.5, side="bottom")), Placement())
+    assert [(o.a, o.b, o.kind) for o in same.hard.overlaps] == [("J1", "R1", "courtyard")]
+
+
+def test_off_board_parts_skip_overlap_and_edge_but_keep_their_nets() -> None:
+    b = board(
+        part("R1", 10, 10, pads=[("1", "/A", 0, 0)]),
+        part("R5", 70, 10, pads=[("1", "/A", 0, 0)], on_board=False),
+        part("R6", 70.5, 10, on_board=False),
+    )
+    s = score(b, Placement())
+    assert s.hard.overlaps == [] and s.hard.edge == []
+    assert s.soft.hpwl_mm == pytest.approx(60)
+    assert off_board_refs(b, Placement()) == {"R5", "R6"}
+    assert movable_refs(b, Placement()) == ["R1"]
+    listed = Placement(movable=["R1", "R5"])
+    assert off_board_refs(b, listed) == {"R6"}
+    assert movable_refs(b, listed) == ["R1", "R5"]
+    assert [v.ref for v in score(b, listed).hard.edge] == ["R5"]
+
+
+def test_movable_list_limits_movers_and_exempts_the_rest_from_edge() -> None:
+    b = board(part("R1", 10, 10), part("R2", 0.5, 20), part("R3", 30, 20, locked=True), part("R4", 0.5, 30))
+    p = Placement(movable=["R1", "R3", "R4"])
+    assert movable_refs(b, p) == ["R1", "R4"]
+    assert [v.ref for v in score(b, p).hard.edge] == ["R4"]
+    assert score(b, p).hard.fixed_moved == []
 
 
 def test_edge_clearance() -> None:

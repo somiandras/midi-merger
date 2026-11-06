@@ -3,6 +3,8 @@
 from board_model import BoardData, FootprintData, PadData, Pose
 
 PadSpec = tuple[str, str, float, float]
+# Through-hole pad: centre (x, y) in local coordinates and the side of its square.
+HoleSpec = tuple[float, float, float]
 
 
 def part(
@@ -15,6 +17,8 @@ def part(
     rot: float = 0.0,
     side: str = "top",
     locked: bool = False,
+    holes: list[HoleSpec] | None = None,
+    on_board: bool = True,
 ) -> FootprintData:
     """A footprint with a w x h courtyard centred on its position; pads are (number, net, x, y)."""
     ring = [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2), (-w / 2, -h / 2)]
@@ -26,6 +30,8 @@ def part(
         pads=[PadData(number=n, pin_name="", net=net, x=px, y=py) for n, net, px, py in pads or []],
         courtyard=[ring],
         courtyard_from_pads=False,
+        through_holes=[[(hx - s / 2, hy - s / 2), (hx + s / 2, hy - s / 2), (hx + s / 2, hy + s / 2), (hx - s / 2, hy + s / 2)] for hx, hy, s in holes or []],
+        on_board=on_board,
     )
 
 

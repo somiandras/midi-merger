@@ -12,10 +12,16 @@ Definitions:
 - Crossings: a minimum spanning tree over each signal net's pad centres; every pair of
   tree segments from different nets that intersect counts once.
 - Overlaps: courtyards of footprints on the same side whose intersection has positive
-  area. Depth is the smaller side of the intersection's bounding box.
+  area (kind "courtyard"); and a footprint's through-hole pads, grown by TH_CLEARANCE_MM,
+  against the courtyard of any other footprint on either side (kind "through_hole", only
+  when that pair has no courtyard overlap already). Depth is the smaller side of the
+  intersection's bounding box.
+- Off-board parts (see `off_board_refs`) are left out of overlaps and edge; their pads
+  still count for wirelength, crossings and decoupling.
 - Edge: a courtyard must lie inside the Edge.Cuts outline (holes included) at least
-  edge_clearance_mm from it. Parts under `fixed:` or locked in KiCad are exempt, because a
-  human put them there (connectors often overhang the edge on purpose).
+  edge_clearance_mm from it. Parts under `fixed:`, locked in KiCad, or left out of a
+  `movable:` list are exempt, because a human put them there (connectors often overhang
+  the edge on purpose).
 - Region: every member of a group with a region has its courtyard inside that rectangle.
 - Fixed moved: a part under `fixed:` is more than 0.01 mm or 0.1 degrees off its entry.
 - Decoupling: centre of the cap pad on the shared net to the centre of the IC pin.
@@ -26,7 +32,8 @@ Definitions:
 
 import math
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 from shapely import STRtree, affinity, box
@@ -42,6 +49,9 @@ HARD_PENALTY = 1e6
 OVERLAP_MIN_AREA_MM2 = 1e-4
 FIXED_POSITION_TOLERANCE_MM = 0.01
 FIXED_ROTATION_TOLERANCE_DEG = 0.1
+# Gap kept between a through-hole pad (copper or drill, whichever is larger) and any other
+# part's courtyard, on either side of the board: room for the solder joint.
+TH_CLEARANCE_MM = 0.25
 CAPACITOR_REF = re.compile(r"C\d+")
 IC_REF = re.compile(r"(U|IC)\d+")
 
@@ -55,9 +65,12 @@ class Result(BaseModel):
 
 
 class Overlap(Result):
+    """Kind "through_hole": `b`'s courtyard covers through-hole pads of `a`."""
+
     a: str
     b: str
     depth_mm: float
+    kind: Literal["courtyard", "through_hole"] = "courtyard"
 
 
 class EdgeViolation(Result):
@@ -166,26 +179,79 @@ def compile_patterns(patterns: Iterable[str]) -> list[re.Pattern[str]]:
     return [re.compile(p, re.IGNORECASE) for p in patterns]
 
 
+def off_board_refs(board: BoardData, placement: Placement) -> set[str]:
+    """Parts outside the chosen outline of a multi-outline board, unless listed under `movable:`."""
+    listed = set(placement.movable or [])
+    return {fp.ref for fp in board.footprints if not fp.on_board and fp.ref not in listed}
+
+
+def movable_refs(board: BoardData, placement: Placement) -> list[str]:
+    """Parts the placer may move: not fixed, not locked, on a side listed in board.sides,
+    on this board, and listed under `movable:` when that list is given."""
+    off = off_board_refs(board, placement)
+    listed = None if placement.movable is None else set(placement.movable)
+    return sorted(
+        fp.ref
+        for fp in board.footprints
+        if fp.ref not in placement.fixed
+        and not fp.locked
+        and fp.side in placement.board.sides
+        and fp.ref not in off
+        and (listed is None or fp.ref in listed)
+    )
+
+
+def _grown(ring: Sequence[Point], margin: float) -> list[Point]:
+    """The rectangle `ring` (its first four corners, in order) grown by `margin` on every
+    side, square corners kept, like the placer's boxes."""
+    (x0, y0), (x1, y1), _, (x3, y3) = ring[:4]
+    ux, uy, vx, vy = x1 - x0, y1 - y0, x3 - x0, y3 - y0
+    lu, lv = math.hypot(ux, uy) or 1.0, math.hypot(vx, vy) or 1.0
+    ux, uy, vx, vy = ux / lu * margin, uy / lu * margin, vx / lv * margin, vy / lv * margin
+    return [
+        (x0 - ux - vx, y0 - uy - vy),
+        (x1 + ux - vx, y1 + uy - vy),
+        (x1 + ux + vx + x3 - x0, y1 + uy + vy + y3 - y0),
+        (x3 - ux + vx, y3 - uy + vy),
+    ]
+
+
+def _union(rings: Iterable[Sequence[Point]]) -> BaseGeometry:
+    polygons = [Polygon(ring) for ring in rings if len(ring) >= 3]
+    return unary_union(polygons) if polygons else Polygon()
+
+
+def _at(local: BaseGeometry, pose: Pose) -> BaseGeometry:
+    """Local geometry placed at `pose`."""
+    rad = math.radians(pose.rot)
+    cos_a, sin_a = math.cos(rad), math.sin(rad)
+    return affinity.affine_transform(local, [cos_a, sin_a, -sin_a, cos_a, pose.x, pose.y])
+
+
+class Shapes:
+    """Every footprint's courtyard and grown through-hole pads in local coordinates. They do
+    not depend on poses, so a caller that scores the same board many times builds this once
+    and passes it to `score`."""
+
+    def __init__(self, board: BoardData) -> None:
+        self.courtyards: dict[str, BaseGeometry] = {fp.ref: _union(fp.courtyard) for fp in board.footprints}
+        self.holes: dict[str, BaseGeometry] = {
+            fp.ref: _union(_grown(ring, TH_CLEARANCE_MM) for ring in fp.through_holes) for fp in board.footprints if fp.through_holes
+        }
+
+
 class _Placed:
     """Footprints at the scored poses, with board-frame geometry."""
 
-    def __init__(self, board: BoardData, poses: Mapping[str, Pose]) -> None:
+    def __init__(self, board: BoardData, poses: Mapping[str, Pose], shapes: Shapes | None = None) -> None:
         self.footprints: dict[str, FootprintData] = {fp.ref: fp for fp in board.footprints}
         unknown = sorted(set(poses) - self.footprints.keys())
         if unknown:
             raise ConstraintError(f"poses for parts not on the board: {', '.join(unknown)}")
+        local = shapes or Shapes(board)
         self.poses: dict[str, Pose] = {ref: poses.get(ref, fp.pose) for ref, fp in self.footprints.items()}
-        self.courtyards: dict[str, BaseGeometry] = {
-            ref: self._courtyard(fp, self.poses[ref]) for ref, fp in self.footprints.items()
-        }
-
-    @staticmethod
-    def _courtyard(fp: FootprintData, pose: Pose) -> BaseGeometry:
-        rad = math.radians(pose.rot)
-        cos_a, sin_a = math.cos(rad), math.sin(rad)
-        polygons = [Polygon(ring) for ring in fp.courtyard if len(ring) >= 3]
-        local = unary_union(polygons) if polygons else Polygon()
-        return affinity.affine_transform(local, [cos_a, sin_a, -sin_a, cos_a, pose.x, pose.y])
+        self.courtyards: dict[str, BaseGeometry] = {ref: _at(geom, self.poses[ref]) for ref, geom in local.courtyards.items()}
+        self.holes: dict[str, BaseGeometry] = {ref: _at(geom, self.poses[ref]) for ref, geom in local.holes.items()}
 
     def pad_point(self, ref: str, pad: PadData) -> Point:
         return to_board(self.poses[ref], (pad.x, pad.y))
@@ -246,25 +312,45 @@ def _intersecting_pairs(geoms: Sequence[BaseGeometry]) -> list[tuple[int, int]]:
     return [(i, j) for i, j in zip(map(int, left), map(int, right)) if i < j]
 
 
-def _overlaps(placed: _Placed) -> list[Overlap]:
-    refs = sorted(placed.courtyards)
+def _overlap_depth(a: BaseGeometry, b: BaseGeometry) -> float | None:
+    """Smaller side of the intersection's bounding box; None when the area is negligible."""
+    inter = a.intersection(b)
+    if inter.area <= OVERLAP_MIN_AREA_MM2:
+        return None
+    min_x, min_y, max_x, max_y = inter.bounds
+    return min(max_x - min_x, max_y - min_y)
+
+
+def _overlaps(placed: _Placed, skip: Collection[str]) -> list[Overlap]:
+    refs = sorted(ref for ref in placed.courtyards if ref not in skip)
     geoms = [placed.courtyards[ref] for ref in refs]
     found: list[Overlap] = []
     for i, j in _intersecting_pairs(geoms):
         a, b = refs[i], refs[j]
         if placed.footprints[a].side != placed.footprints[b].side:
             continue
-        inter = geoms[i].intersection(geoms[j])
-        if inter.area <= OVERLAP_MIN_AREA_MM2:
-            continue
-        min_x, min_y, max_x, max_y = inter.bounds
-        found.append(Overlap(a=a, b=b, depth_mm=min(max_x - min_x, max_y - min_y)))
+        depth = _overlap_depth(geoms[i], geoms[j])
+        if depth is not None:
+            found.append(Overlap(a=a, b=b, depth_mm=depth))
+
+    seen = {frozenset((o.a, o.b)) for o in found}
+    owners = sorted(ref for ref in placed.holes if ref not in skip)
+    if owners and geoms:
+        holes = [placed.holes[ref] for ref in owners]
+        left, right = STRtree(geoms).query(holes, predicate="intersects")
+        for h, c in sorted(zip(map(int, left), map(int, right))):
+            a, b = owners[h], refs[c]
+            if a == b or frozenset((a, b)) in seen:
+                continue
+            depth = _overlap_depth(holes[h], geoms[c])
+            if depth is not None:
+                found.append(Overlap(a=a, b=b, depth_mm=depth, kind="through_hole"))
     return found
 
 
-def courtyard_overlaps(board: BoardData, poses: Mapping[str, Pose]) -> list[Overlap]:
-    """Courtyard overlaps with footprints at `poses` (missing refs keep their board pose)."""
-    return _overlaps(_Placed(board, poses))
+def courtyard_overlaps(board: BoardData, poses: Mapping[str, Pose], skip: Collection[str] = ()) -> list[Overlap]:
+    """Overlaps with footprints at `poses` (missing refs keep their board pose), leaving out `skip`."""
+    return _overlaps(_Placed(board, poses), skip)
 
 
 def _vertices(geom: BaseGeometry) -> list[Point]:
@@ -277,12 +363,14 @@ def _max_vertex_distance(geom: BaseGeometry, target: BaseGeometry) -> float:
     return max((target.distance(ShapelyPoint(v)) for v in _vertices(geom)), default=0.0)
 
 
-def _edge(board: BoardData, placed: _Placed, placement: Placement) -> list[EdgeViolation]:
+def _edge(board: BoardData, placed: _Placed, placement: Placement, off_board: Collection[str]) -> list[EdgeViolation]:
     outline = Polygon(board.outline, board.holes)
     min_mm = placement.board.edge_clearance_mm
+    listed = None if placement.movable is None else set(placement.movable)
     found: list[EdgeViolation] = []
     for ref, geom in sorted(placed.courtyards.items()):
-        if geom.is_empty or ref in placement.fixed or placed.footprints[ref].locked:
+        exempt = ref in placement.fixed or placed.footprints[ref].locked or ref in off_board or (listed is not None and ref not in listed)
+        if geom.is_empty or exempt:
             continue
         if outline.contains(geom):
             clearance = geom.distance(outline.boundary)
@@ -378,9 +466,10 @@ def _separation(placed: _Placed, placement: Placement) -> list[SeparationViolati
     return found
 
 
-def score(board: BoardData, placement: Placement, poses: Mapping[str, Pose] | None = None) -> Score:
-    """Score `board` with footprints at `poses` (missing refs keep their board pose)."""
-    placed = _Placed(board, poses or {})
+def score(board: BoardData, placement: Placement, poses: Mapping[str, Pose] | None = None, shapes: Shapes | None = None) -> Score:
+    """Score `board` with footprints at `poses` (missing refs keep their board pose).
+    `shapes`, when given, must be `Shapes(board)` for this same board."""
+    placed = _Placed(board, poses or {}, shapes)
     power = compile_patterns(placement.power_nets)
     ground = compile_patterns(GROUND_NET_PATTERNS)
     critical = {c.net: c.weight for c in placement.critical_nets}
@@ -399,9 +488,10 @@ def score(board: BoardData, placement: Placement, poses: Mapping[str, Pose] | No
             ys = [p[1] for p in pts]
             hpwl[net] = (max(xs) - min(xs)) + (max(ys) - min(ys))
 
+    off_board = off_board_refs(board, placement)
     hard = Hard(
-        overlaps=_overlaps(placed),
-        edge=_edge(board, placed, placement),
+        overlaps=_overlaps(placed, off_board),
+        edge=_edge(board, placed, placement, off_board),
         region=_regions(placed, placement),
         fixed_moved=_fixed_moved(placed, placement),
     )

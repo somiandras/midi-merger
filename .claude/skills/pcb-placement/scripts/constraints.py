@@ -45,6 +45,9 @@ class BoardSettings(StrictModel):
     grid_mm: float = Field(default=0.25, gt=0)
     edge_clearance_mm: float = Field(default=0.5, ge=0)
     sides: list[Side] = Field(default=["top"], min_length=1)
+    # A point inside the wanted outline, in KiCad's absolute coordinates (mm, as KiCad's
+    # status bar shows them). Required when Edge.Cuts holds more than one outline.
+    outline_at: tuple[float, float] | None = None
 
 
 class FixedPart(StrictModel):
@@ -158,6 +161,8 @@ class Weights(StrictModel):
 
 class Placement(StrictModel):
     board: BoardSettings = BoardSettings()
+    # When set, only these refs may move; every other part stays at its board pose.
+    movable: list[str] | None = None
     fixed: dict[str, FixedPart] = {}
     regions: dict[str, Region] = {}
     groups: list[Group] = []
