@@ -4,19 +4,30 @@ Four phases:
 1. Macro placement: each group is one rectangle (its recipe's bbox_mm, or its members'
    courtyard area x 1.6), moved inside its region by force-directed placement that pulls
    groups together by the signal nets they share, and towards immovable parts they connect to.
-2. Intra-group placement: the anchor goes to its rectangle's centre, recipe parts go to their
-   offsets from the anchor, other members to a free spot near the pins they connect to.
-   Ungrouped movable parts follow, each near the placed parts it shares nets with.
+2. Intra-group placement: the anchor goes to its rectangle's centre with its recipe parts at
+   their offsets (offsets snapped to grid_mm), the whole block moved together to the nearest
+   free spot (part by part, each to its nearest free spot, when the offsets make the block
+   overlap itself or no spot holds it); other members go to a free spot near the pins they
+   connect to. Ungrouped movable parts follow, each near the placed parts it shares nets with.
 3. Legalisation: every part the placer moves is snapped to grid_mm, its rotation rounded to
    0/90/180/270, and pushed to the nearest free spot (spiral search, nearest first) where its
    courtyard bounding box lies inside its group's region, inside the outline with
-   edge_clearance_mm, and clear of every other courtyard bounding box on its side.
+   edge_clearance_mm, clear of every other courtyard bounding box on its side and of every
+   other part's through-hole pad boxes (grown by scoring.TH_CLEARANCE_MM) on either side,
+   with its own through-hole pad boxes clear of the courtyard boxes on the other side.
 4. Refinement: simulated annealing on exactly `scoring.score`'s cost. Moves: shift one part,
    rotate one part 90 degrees, swap two parts with the same footprint, mirror a group. The
    moved parts are legalised before the move is scored, so every scored state is legal.
 
-Parts under `fixed:`, parts locked in KiCad, and parts on a side not in board.sides are
-obstacles and never move. The placer never flips a part to the other side.
+Recipe blocks are rigid during annealing: a recipe group's anchor and the parts mapped to
+recipe roles keep the offsets (relative to the anchor) they had when annealing started, and
+shift, rotate (offsets turn with the anchor) and mirror only as one unit, legalised as one
+unit. Swaps never involve them. If the anchor or any of those parts cannot move, none of
+them moves during annealing. Group members without a recipe role still move on their own.
+
+Parts that `scoring.movable_refs` leaves out (fixed, locked in KiCad, on a side not in
+board.sides, off the chosen outline, or not in a `movable:` list) are obstacles and never
+move. The placer never flips a part to the other side.
 
 Start: the constructed placement (phases 1-3) or, unless `from_scratch`, the current board
 poses with only the illegal parts legalised, whichever scores lower. From the constructed
@@ -41,13 +52,16 @@ from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict
 from shapely import Polygon, box, contains_xy
 
-from board_model import BoardData, FootprintData, Point, Pose, to_board
+from board_model import BoardData, FootprintData, Point, Pose, rotate, to_board, to_local
 from constraints import GROUND_NET_PATTERNS, Group, Placement
 from recipes import Recipe, part_pose, reference_point
-from scoring import HARD_PENALTY, IC_REF, compile_patterns, net_matches, score
+from scoring import HARD_PENALTY, IC_REF, TH_CLEARANCE_MM, Shapes, compile_patterns, movable_refs, net_matches, score
 
 Rect = tuple[float, float, float, float]
 FloatArray = NDArray[np.float64]
+# One part of a block placed as a unit: ref, offset (x, y) from the block's anchor position
+# in the board frame, and rotation.
+Body = tuple[str, float, float, float]
 
 # Boxes may touch; overlaps smaller than this do not count.
 TOUCH_EPS_MM = 1e-6
@@ -86,11 +100,16 @@ class Outcome(BaseModel):
     unplaced: list[str]
 
 
-def movable_refs(board: BoardData, placement: Placement) -> list[str]:
-    """Parts the placer may move: not fixed, not locked, on a side listed in board.sides."""
-    return sorted(
-        fp.ref for fp in board.footprints if fp.ref not in placement.fixed and not fp.locked and fp.side in placement.board.sides
-    )
+class Rigid(BaseModel):
+    """A recipe part held at a fixed offset from its block's anchor during annealing:
+    position in the anchor's local frame, rotation relative to the anchor's."""
+
+    model_config = ConfigDict(frozen=True)
+
+    ref: str
+    x: float
+    y: float
+    rot: float
 
 
 def default_iterations(board: BoardData, placement: Placement) -> int:
@@ -125,19 +144,35 @@ class Layout:
         self.rect_outline = self.allowed.equals(box(*self.allowed.bounds))
         self.ground = compile_patterns(GROUND_NET_PATTERNS)
         self.power = compile_patterns(placement.power_nets)
+        self.shapes = Shapes(board)
 
         self._points: dict[str, FloatArray] = {
             ref: np.array([p for ring in fp.courtyard for p in ring], dtype=np.float64).reshape(-1, 2) for ref, fp in self.footprints.items()
         }
         self._local_boxes: dict[tuple[str, float], Rect | None] = {}
+        self._hole_points: dict[str, list[FloatArray]] = {
+            ref: [np.array(ring, dtype=np.float64).reshape(-1, 2) for ring in fp.through_holes if ring] for ref, fp in self.footprints.items()
+        }
+        self._hole_boxes: dict[tuple[str, float], FloatArray] = {}
         self.poses: dict[str, Pose] = board.poses()
         self.boxes: FloatArray = np.zeros((len(self.refs), 4), dtype=np.float64)
         self.has_box = np.zeros(len(self.refs), dtype=np.bool_)
         self.side = np.array([self.footprints[r].side == "bottom" for r in self.refs], dtype=np.bool_)
         self.active = np.ones(len(self.refs), dtype=np.bool_)
+        # Through-hole pad boxes of every part, rows grouped by owner.
+        counts = [len(self._hole_points[r]) for r in self.refs]
+        starts = np.concatenate([[0], np.cumsum(counts)]).astype(int)
+        self.hole_rows: dict[str, slice] = {r: slice(int(starts[i]), int(starts[i + 1])) for i, r in enumerate(self.refs)}
+        self.hole_owner = np.repeat(np.arange(len(self.refs)), counts)
+        self.hole_boxes: FloatArray = np.zeros((int(starts[-1]), 4), dtype=np.float64)
         for ref in self.refs:
             self._store(ref, self.poses[ref])
         self.claimed: set[tuple[str, str]] = set()
+        # Annealing state, set by bind_blocks: rigid recipe blocks by anchor, parts that must
+        # not move, and what one shift or rotate move acts on (free parts and block anchors).
+        self.blocks: dict[str, list[Rigid]] = {}
+        self.frozen: set[str] = set()
+        self.items: list[str] = list(self.movable)
 
     # --- geometry -------------------------------------------------------------------
 
@@ -156,6 +191,22 @@ class Layout:
                 self._local_boxes[key] = (float(xs.min()), float(ys.min()), float(xs.max()), float(ys.max()))
         return self._local_boxes[key]
 
+    def local_hole_boxes(self, ref: str, rot: float) -> FloatArray:
+        """Boxes (k x 4) of the part's through-hole pads grown by TH_CLEARANCE_MM, relative to
+        the footprint position, at rotation `rot`."""
+        key = (ref, round(rot % 360.0, 6))
+        if key not in self._hole_boxes:
+            rad = math.radians(rot)
+            c, s = math.cos(rad), math.sin(rad)
+            rows: list[list[float]] = []
+            for pts in self._hole_points[ref]:
+                xs = pts[:, 0] * c + pts[:, 1] * s
+                ys = pts[:, 1] * c - pts[:, 0] * s
+                m = TH_CLEARANCE_MM
+                rows.append([float(xs.min()) - m, float(ys.min()) - m, float(xs.max()) + m, float(ys.max()) + m])
+            self._hole_boxes[key] = np.array(rows, dtype=np.float64).reshape(-1, 4)
+        return self._hole_boxes[key]
+
     def box_at(self, ref: str, pose: Pose) -> Rect | None:
         lb = self.local_box(ref, pose.rot)
         return None if lb is None else (pose.x + lb[0], pose.y + lb[1], pose.x + lb[2], pose.y + lb[3])
@@ -167,6 +218,9 @@ class Layout:
         self.has_box[i] = b is not None
         if b is not None:
             self.boxes[i] = b
+        rows = self.hole_rows[ref]
+        if rows.stop > rows.start:
+            self.hole_boxes[rows] = self.local_hole_boxes(ref, pose.rot) + np.array([pose.x, pose.y, pose.x, pose.y])
 
     def set_pose(self, ref: str, pose: Pose) -> None:
         self._store(ref, pose)
@@ -184,10 +238,31 @@ class Layout:
         return self.bounds
 
     def _obstacles(self, ref: str) -> FloatArray:
+        """Boxes the part's courtyard box must stay clear of: active courtyards on its side and
+        active through-hole pads on either side, its own left out."""
         i = self.index[ref]
         mask = self.active & self.has_box & (self.side == self.side[i])
         mask[i] = False
-        return self.boxes[mask]
+        holes = self.active[self.hole_owner] & (self.hole_owner != i)
+        return np.concatenate([self.boxes[mask], self.hole_boxes[holes]])
+
+    def _other_side(self, ref: str) -> FloatArray:
+        """Active courtyard boxes on the other side, which the part's through-hole pads must clear."""
+        i = self.index[ref]
+        return self.boxes[self.active & self.has_box & (self.side != self.side[i])]
+
+    @staticmethod
+    def _hits(x0: FloatArray, y0: FloatArray, x1: FloatArray, y1: FloatArray, ob: FloatArray) -> NDArray[np.bool_]:
+        """Per candidate box: whether it overlaps any of `ob` by more than TOUCH_EPS_MM."""
+        if not len(ob):
+            return np.zeros(len(x0), dtype=np.bool_)
+        hits = (
+            (x0[:, None] < ob[None, :, 2] - TOUCH_EPS_MM)
+            & (ob[None, :, 0] < x1[:, None] - TOUCH_EPS_MM)
+            & (y0[:, None] < ob[None, :, 3] - TOUCH_EPS_MM)
+            & (ob[None, :, 1] < y1[:, None] - TOUCH_EPS_MM)
+        )
+        return np.asarray(hits.any(axis=1), dtype=np.bool_)
 
     def _inside_outline(self, x0: FloatArray, y0: FloatArray, x1: FloatArray, y1: FloatArray) -> NDArray[np.bool_]:
         if self.rect_outline:
@@ -199,7 +274,8 @@ class Layout:
         return ok
 
     def is_legal(self, ref: str, pose: Pose) -> bool:
-        """Courtyard box inside the part's limits and the outline, clear of active same-side boxes."""
+        """Courtyard box inside the part's limits and the outline, clear of `_obstacles`; its
+        through-hole pad boxes clear of the courtyard boxes on the other side."""
         b = self.box_at(ref, pose)
         if b is None:
             return True
@@ -208,24 +284,34 @@ class Layout:
             return False
         if not self.allowed.covers(box(*b)):
             return False
-        ob = self._obstacles(ref)
-        hits = (b[0] < ob[:, 2] - TOUCH_EPS_MM) & (ob[:, 0] < b[2] - TOUCH_EPS_MM) & (b[1] < ob[:, 3] - TOUCH_EPS_MM) & (ob[:, 1] < b[3] - TOUCH_EPS_MM)
-        return not bool(hits.any())
+        one = np.array([b], dtype=np.float64)
+        if self._hits(one[:, 0], one[:, 1], one[:, 2], one[:, 3], self._obstacles(ref)).any():
+            return False
+        holes = self.local_hole_boxes(ref, pose.rot) + np.array([pose.x, pose.y, pose.x, pose.y])
+        return not self._hits(holes[:, 0], holes[:, 1], holes[:, 2], holes[:, 3], self._other_side(ref)).any()
 
     def find_spot(self, ref: str, x: float, y: float, rot: float, radius_mm: float = math.inf) -> Pose | None:
         """Nearest legal grid position to (x, y) within `radius_mm`, rotation rounded to 90 degrees."""
         rot = quarter(rot)
+        spot = self.find_block_spot([(ref, 0.0, 0.0, rot)], x, y, radius_mm)
+        return None if spot is None else Pose(x=spot[0], y=spot[1], rot=rot)
+
+    def find_block_spot(self, bodies: Sequence[Body], x: float, y: float, radius_mm: float = math.inf) -> Point | None:
+        """Nearest grid position to (x, y), within `radius_mm`, where every body (placed at that
+        position plus its offset) is legal as `is_legal` defines it. The parts named in `bodies`
+        must be inactive, so that they are not obstacles to each other."""
         g = self.grid
-        lb = self.local_box(ref, rot)
-        if lb is None:
-            return Pose(x=round(x / g) * g, y=round(y / g) * g, rot=rot)
-        lx0, ly0, lx1, ly1 = self.limits(ref)
+        boxed = [(ref, ox, oy, lb) for ref, ox, oy, rot in bodies if (lb := self.local_box(ref, rot)) is not None]
+        if not boxed:
+            return (round(x / g) * g, round(y / g) * g)
         ax0, ay0, ax1, ay1 = self.allowed.bounds
-        # Positions where the box fits the limits, the outline's bounds and the search radius.
-        px0 = max(lx0, ax0) - lb[0]
-        px1 = min(lx1, ax1) - lb[2]
-        py0 = max(ly0, ay0) - lb[1]
-        py1 = min(ly1, ay1) - lb[3]
+        # Positions where every box fits its limits, the outline's bounds and the search radius.
+        px0 = py0 = -math.inf
+        px1 = py1 = math.inf
+        for ref, ox, oy, lb in boxed:
+            lx0, ly0, lx1, ly1 = self.limits(ref)
+            px0, px1 = max(px0, max(lx0, ax0) - lb[0] - ox), min(px1, min(lx1, ax1) - lb[2] - ox)
+            py0, py1 = max(py0, max(ly0, ay0) - lb[1] - oy), min(py1, min(ly1, ay1) - lb[3] - oy)
         if math.isfinite(radius_mm):
             px0, px1 = max(px0, x - radius_mm), min(px1, x + radius_mm)
             py0, py1 = max(py0, y - radius_mm), min(py1, y + radius_mm)
@@ -242,36 +328,56 @@ class Layout:
         cx, cy, dist = cx[keep], cy[keep], dist[keep]
         order = np.lexsort((cx, cy, dist))
         cx, cy = cx[order], cy[order]
-        ob = self._obstacles(ref)
+        checks = [
+            (ox, oy, self.local_box(ref, rot), self._obstacles(ref), self.local_hole_boxes(ref, rot), self._other_side(ref))
+            for ref, ox, oy, rot in bodies
+        ]
         for start in range(0, len(cx), CHUNK):
             sx, sy = cx[start : start + CHUNK], cy[start : start + CHUNK]
-            x0, y0, x1, y1 = sx + lb[0], sy + lb[1], sx + lb[2], sy + lb[3]
-            ok = self._inside_outline(x0, y0, x1, y1)
-            if len(ob):
-                hits = (
-                    (x0[:, None] < ob[None, :, 2] - TOUCH_EPS_MM)
-                    & (ob[None, :, 0] < x1[:, None] - TOUCH_EPS_MM)
-                    & (y0[:, None] < ob[None, :, 3] - TOUCH_EPS_MM)
-                    & (ob[None, :, 1] < y1[:, None] - TOUCH_EPS_MM)
-                )
-                ok &= ~hits.any(axis=1)
+            ok = np.ones(len(sx), dtype=np.bool_)
+            for ox, oy, lb, obstacles, holes, other_side in checks:
+                bx, by = sx + ox, sy + oy
+                if lb is not None:
+                    x0, y0, x1, y1 = bx + lb[0], by + lb[1], bx + lb[2], by + lb[3]
+                    ok &= self._inside_outline(x0, y0, x1, y1)
+                    ok &= ~self._hits(x0, y0, x1, y1, obstacles)
+                for h in holes:
+                    ok &= ~self._hits(bx + h[0], by + h[1], bx + h[2], by + h[3], other_side)
             for k in np.flatnonzero(ok):
-                if self.rect_outline or self.allowed.covers(box(float(x0[k]), float(y0[k]), float(x1[k]), float(y1[k]))):
-                    return Pose(x=float(sx[k]), y=float(sy[k]), rot=rot)
+                px, py = float(sx[k]), float(sy[k])
+                if self.rect_outline or all(
+                    self.allowed.covers(box(px + ox + lb[0], py + oy + lb[1], px + ox + lb[2], py + oy + lb[3])) for _, ox, oy, lb in boxed
+                ):
+                    return (px, py)
         return None
 
+    def bodies(self, item: str, rot: float) -> list[Body]:
+        """`item` at rotation `rot` with its block's recipe parts, if it anchors one."""
+        out: list[Body] = [(item, 0.0, 0.0, rot)]
+        for part in self.blocks.get(item, []):
+            dx, dy = rotate((part.x, part.y), rot)
+            out.append((part.ref, dx, dy, (rot + part.rot) % 360.0))
+        return out
+
+    def refs_of(self, item: str) -> list[str]:
+        return [item, *(part.ref for part in self.blocks.get(item, []))]
+
     def move_all(self, targets: Sequence[tuple[str, Pose]], radius_mm: float) -> bool:
-        """Legalise each part near its target, in order; on failure restore every part and return False."""
-        old = [(ref, self.poses[ref]) for ref, _ in targets]
-        for ref, _ in targets:
+        """Legalise each item (a part, or a block by its anchor) near its target, in order; on
+        failure restore every part and return False."""
+        old = [(ref, self.poses[ref]) for item, _ in targets for ref in self.refs_of(item)]
+        for ref, _ in old:
             self.active[self.index[ref]] = False
-        for ref, target in targets:
-            spot = self.find_spot(ref, target.x, target.y, target.rot, radius_mm)
+        for item, target in targets:
+            rot = quarter(target.rot)
+            bodies = self.bodies(item, rot)
+            spot = self.find_block_spot(bodies, target.x, target.y, radius_mm)
             if spot is None:
                 for r, pose in old:
                     self.set_pose(r, pose)
                 return False
-            self.set_pose(ref, spot)
+            for ref, ox, oy, body_rot in bodies:
+                self.set_pose(ref, Pose(x=spot[0] + ox, y=spot[1] + oy, rot=body_rot))
         return True
 
     # --- connectivity -----------------------------------------------------------------
@@ -412,8 +518,62 @@ class Layout:
     def board_pose(self, ref: str) -> Pose:
         return self.footprints[ref].pose
 
+    def recipe_refs(self, group: Group) -> list[str]:
+        """Members mapped to a role of the group's recipe, anchor excluded, in recipe order."""
+        recipe = self.recipes.get(group.name)
+        if recipe is None or group.anchor is None:
+            return []
+        return [group.roles[role] for role in recipe.order() if role in group.roles]
+
+    def _recipe_block(self, group: Group, anchor: str, rot: float) -> list[Body]:
+        """The group's `anchor` at rotation `rot` and its recipe parts at their offsets from it,
+        offsets snapped to the grid. Parts whose reference point is unknown are left out."""
+        recipe = self.recipes[group.name]
+        refs = {**group.roles, recipe.anchor: anchor}
+        g = self.grid
+        at: dict[str, Pose] = {anchor: Pose(x=0.0, y=0.0, rot=rot)}
+        bodies: list[Body] = [(anchor, 0.0, 0.0, rot)]
+        for role in recipe.order():
+            ref, part = refs.get(role), recipe.parts[role]
+            rel_ref = refs.get(part.rel_role)
+            if ref is None or rel_ref is None or rel_ref not in at:
+                continue
+            point = reference_point(self.footprints[rel_ref], at[rel_ref], part.rel_pin)
+            if point is None:
+                continue
+            pose = part_pose(part, rot, point)
+            at[ref] = Pose(x=round(pose.x / g) * g, y=round(pose.y / g) * g, rot=pose.rot)
+            bodies.append((ref, at[ref].x, at[ref].y, pose.rot))
+        return bodies
+
+    def _overlaps_itself(self, bodies: Sequence[Body]) -> bool:
+        """Whether two same-side parts of the block have overlapping courtyard boxes."""
+        placed = [(self.footprints[ref].side, b) for ref, ox, oy, rot in bodies if (b := self.box_at(ref, Pose(x=ox, y=oy, rot=rot))) is not None]
+        return any(
+            sa == sb and a[0] < b[2] - TOUCH_EPS_MM and b[0] < a[2] - TOUCH_EPS_MM and a[1] < b[3] - TOUCH_EPS_MM and b[1] < a[3] - TOUCH_EPS_MM
+            for i, (sa, a) in enumerate(placed)
+            for sb, b in placed[i + 1 :]
+        )
+
+    def _place_block(self, group: Group, x: float, y: float) -> set[str] | None:
+        """Place a recipe group's movable anchor with its recipe parts as one block, nearest
+        (x, y); return the refs placed, or None when some recipe part cannot move, the
+        recipe offsets make the block's own parts overlap, or no spot holds the whole block."""
+        anchor, parts = group.anchor, self.recipe_refs(group)
+        if anchor is None or not parts or any(ref not in self.movable_set for ref in [anchor, *parts]):
+            return None
+        bodies = self._recipe_block(group, anchor, quarter(self.board_pose(anchor).rot))
+        if self._overlaps_itself(bodies):
+            return None
+        spot = self.find_block_spot(bodies, x, y)
+        if spot is None:
+            return None
+        for ref, ox, oy, rot in bodies:
+            self.set_pose(ref, Pose(x=spot[0] + ox, y=spot[1] + oy, rot=rot))
+        return {ref for ref, _, _, _ in bodies}
+
     def _recipe_parts(self, group: Group) -> set[str]:
-        """Place the group's recipe parts at their offsets; return the refs placed."""
+        """Place the group's recipe parts at their offsets one by one; return the refs placed."""
         recipe = self.recipes.get(group.name)
         if recipe is None or group.anchor is None:
             return set()
@@ -448,9 +608,13 @@ class Layout:
             movers = [r for r in g.members if r in self.movable_set]
             anchor = g.anchor if g.anchor is not None else max(movers, key=lambda r: (self.area(r), r))
             centre = centres[g.name]
-            if anchor in self.movable_set:
-                self._place_near(anchor, centre[0], centre[1], quarter(self.board_pose(anchor).rot))
-            done = {anchor} | self._recipe_parts(g)
+            block = self._place_block(g, centre[0], centre[1])
+            if block is not None:
+                done = block
+            else:
+                if anchor in self.movable_set:
+                    self._place_near(anchor, centre[0], centre[1], quarter(self.board_pose(anchor).rot))
+                done = {anchor} | self._recipe_parts(g)
             rest = sorted((r for r in movers if r not in done), key=lambda r: (-self.area(r), r))
             near = (self.poses[anchor].x, self.poses[anchor].y)
             for ref in rest:
@@ -478,14 +642,33 @@ class Layout:
             self.set_pose(ref, poses[ref])
 
     def cost(self) -> float:
-        return score(self.board, self.placement, self.poses).cost
+        return score(self.board, self.placement, self.poses, self.shapes).cost
 
     # --- phase 4 ------------------------------------------------------------------------
 
+    def bind_blocks(self) -> None:
+        """Tie each recipe block to its anchor at the current poses (see the module docstring)."""
+        self.blocks, self.frozen = {}, set()
+        for group in self.placement.groups:
+            anchor, parts = group.anchor, self.recipe_refs(group)
+            if anchor is None or not parts:
+                continue
+            if all(ref in self.movable_set for ref in [anchor, *parts]):
+                a = self.poses[anchor]
+                tied: list[Rigid] = []
+                for ref in parts:
+                    lx, ly = to_local(a, (self.poses[ref].x, self.poses[ref].y))
+                    tied.append(Rigid(ref=ref, x=lx, y=ly, rot=self.poses[ref].rot - a.rot))
+                self.blocks[anchor] = tied
+            else:
+                self.frozen |= {ref for ref in [anchor, *parts] if ref in self.movable_set}
+        in_block = {part.ref for parts in self.blocks.values() for part in parts}
+        self.items = [ref for ref in self.movable if ref not in self.frozen and ref not in in_block]
+
     def _swap_classes(self) -> list[list[str]]:
-        """Movable parts with identical pads and courtyard on the same side, two or more per class."""
+        """Free parts (no recipe block) with identical pads and courtyard on the same side, two or more per class."""
         classes: dict[str, list[str]] = {}
-        for ref in self.movable:
+        for ref in (r for r in self.items if r not in self.blocks):
             fp = self.footprints[ref]
             pads = sorted((p.number, round(p.x, 3), round(p.y, 3)) for p in fp.pads)
             ring = [(round(x, 3), round(y, 3)) for r in fp.courtyard for x, y in r]
@@ -495,24 +678,25 @@ class Layout:
     def propose(
         self, rng: random.Random, progress: float, swaps: Sequence[Sequence[str]], mirrors: Sequence[Group], reach_mm: float | None
     ) -> list[tuple[str, Pose]]:
-        """One move. Shifts reach `reach_mm`, or half the part's region shrinking to 4 grid steps when None."""
+        """One move: (item, target pose) pairs, where an item is a free part or a block's anchor.
+        Shifts reach `reach_mm`, or half the part's region shrinking to 4 grid steps when None."""
         kind = rng.random()
         if kind >= MOVE_SWAP and mirrors:
             group = mirrors[rng.randrange(len(mirrors))]
-            movers = [r for r in group.members if r in self.movable_set]
-            boxes = [b for r in movers if (b := self.box_at(r, self.poses[r])) is not None]
+            items = [r for r in group.members if r in self.items]
+            boxes = [b for item in items for r in self.refs_of(item) if (b := self.box_at(r, self.poses[r])) is not None]
             if not boxes:
                 return []
             cx = (min(b[0] for b in boxes) + max(b[2] for b in boxes)) / 2
             cy = (min(b[1] for b in boxes) + max(b[3] for b in boxes)) / 2
             if rng.random() < 0.5:
-                return [(r, Pose(x=2 * cx - self.poses[r].x, y=self.poses[r].y, rot=quarter(180.0 - self.poses[r].rot))) for r in movers]
-            return [(r, Pose(x=self.poses[r].x, y=2 * cy - self.poses[r].y, rot=quarter(-self.poses[r].rot))) for r in movers]
+                return [(r, Pose(x=2 * cx - self.poses[r].x, y=self.poses[r].y, rot=quarter(180.0 - self.poses[r].rot))) for r in items]
+            return [(r, Pose(x=self.poses[r].x, y=2 * cy - self.poses[r].y, rot=quarter(-self.poses[r].rot))) for r in items]
         if kind >= MOVE_ROTATE and swaps:
             refs = swaps[rng.randrange(len(swaps))]
             a, b = rng.sample(list(refs), 2)
             return [(a, self.poses[b]), (b, self.poses[a])]
-        ref = self.movable[rng.randrange(len(self.movable))]
+        ref = self.items[rng.randrange(len(self.items))]
         pose = self.poses[ref]
         if kind >= MOVE_SHIFT:
             return [(ref, Pose(x=pose.x, y=pose.y, rot=quarter(pose.rot) + rng.choice((90.0, 270.0))))]
@@ -528,13 +712,17 @@ class Layout:
         pose, start = self.poses[ref], self.board_pose(ref)
         return math.hypot(pose.x - start.x, pose.y - start.y)
 
+    def _snapshot(self, move: Sequence[tuple[str, Pose]]) -> list[tuple[str, Pose]]:
+        """Current poses of every part a move touches, block parts included."""
+        return [(ref, self.poses[ref]) for item, _ in move for ref in self.refs_of(item)]
+
     def _start_temperature(self, rng: random.Random, swaps: Sequence[Sequence[str]], mirrors: Sequence[Group]) -> float:
         """Mean cost rise of T0_SAMPLES random moves (hard violations left out); the state is unchanged."""
         current = self.cost()
         rises: list[float] = []
         for _ in range(T0_SAMPLES):
             move = self.propose(rng, 0.0, swaps, mirrors, None)
-            old = [(ref, self.poses[ref]) for ref, _ in move]
+            old = self._snapshot(move)
             if move and self.move_all(move, MOVE_RADIUS_MM):
                 delta = self.cost() - current
                 if 0 < delta < HARD_PENALTY / 10:
@@ -549,11 +737,13 @@ class Layout:
         `refine` keeps a good placement mostly as it is: temperature 0 (only moves that lower
         the cost by more than REFINE_MIN_GAIN are accepted), shifts of at most REFINE_REACH_MM,
         no part more than REFINE_TETHER_MM from its board position, no swaps or mirrors.
+        Recipe blocks move as one unit (see bind_blocks).
         """
-        if not self.movable or iterations <= 0:
+        self.bind_blocks()
+        if not self.items or iterations <= 0:
             return (0, 0, False)
         swaps = [] if refine else self._swap_classes()
-        mirrors = [] if refine else [g for g in self.placement.groups if sum(1 for r in g.members if r in self.movable_set) >= 2]
+        mirrors = [] if refine else [g for g in self.placement.groups if sum(1 for r in g.members if r in self.items) >= 2]
         reach = REFINE_REACH_MM if refine else None
         t0 = 0.0 if refine else self._start_temperature(rng, swaps, mirrors)
         current = self.cost()
@@ -569,10 +759,10 @@ class Layout:
             progress = it / iterations
             temp = t0 * T_END_RATIO**progress
             move = self.propose(rng, progress, swaps, mirrors, reach)
-            old = [(ref, self.poses[ref]) for ref, _ in move]
+            old = self._snapshot(move)
             if not move or not self.move_all(move, MOVE_RADIUS_MM):
                 continue
-            if refine and any(self._drift(ref) > REFINE_TETHER_MM for ref, _ in move):
+            if refine and any(self._drift(ref) > REFINE_TETHER_MM for ref, _ in old):
                 for ref, pose in old:
                     self.set_pose(ref, pose)
                 continue

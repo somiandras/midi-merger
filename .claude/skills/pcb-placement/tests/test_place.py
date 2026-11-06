@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from board_model import BoardData, Pose
+from board_model import BoardData, Pose, to_board, to_local
 from constraints import FixedPart, Placement
 from placer import REFINE_TETHER_MM, Layout, place
 from recipes import Recipe, RecipeError, load_recipe, part_pose
@@ -191,3 +191,128 @@ def test_construction_applies_recipe_offsets_from_a_rotated_anchor() -> None:
     # R: relative to C, (3, 0) turned 90 -> (0, -3), rot 90 + 0.
     assert layout.poses["C1"] == Pose(x=16.0, y=22.0, rot=180.0)
     assert layout.poses["R1"] == Pose(x=16.0, y=19.0, rot=90.0)
+
+
+def test_recipe_parts_of_a_fixed_anchor_keep_their_constructed_pose() -> None:
+    b, p, recipes = recipe_board()
+    # A connector far away on R1's net pulls R1 away from its recipe spot.
+    b = b.model_copy(update={"footprints": [*b.footprints, part("J1", 45, 35, w=3, h=3, locked=True, pads=[("1", "/B", 0, 0)])]})
+    out = place(b, p, recipes, seed=2, iterations=500, budget_s=60, from_scratch=True)
+    assert out.poses["C1"] == Pose(x=16.0, y=22.0, rot=180.0)
+    assert out.poses["R1"] == Pose(x=16.0, y=19.0, rot=90.0)
+
+
+def movable_recipe_board() -> tuple[BoardData, Placement, dict[str, Recipe]]:
+    """A movable anchor U1 with recipe parts C1 and R1, a free group member R2 and free parts
+    with the same footprint as R1, all pulled towards a fixed connector."""
+    resistor = [("1", "/B", -0.5, 0.0), ("2", "/C", 0.5, 0.0)]
+    b = board(
+        part("U1", 25, 20, w=6, h=6, pads=[("1", "+3V3", -2, -2), ("2", "GND", -2, 2), ("3", "/A", 2, 0)]),
+        part("C1", 10, 30, pads=[("1", "+3V3", -0.5, 0), ("2", "GND", 0.5, 0)]),
+        part("R1", 40, 10, pads=[("1", "/A", -0.5, 0), ("2", "/B", 0.5, 0)]),
+        part("R2", 30, 30, pads=resistor),
+        part("R3", 35, 30, pads=resistor),
+        part("R4", 15, 10, pads=[("1", "/C", -0.5, 0.0), ("2", "/D", 0.5, 0.0)]),
+        part("J1", 46, 20, w=4, h=6, pads=[("1", "/D", 0, 0), ("2", "/A", 0, 2)]),
+    )
+    p = Placement.model_validate(
+        {
+            "fixed": {"J1": {"x": 46, "y": 20}},
+            "groups": [{"name": "blk", "anchor": "U1", "recipe": "pair", "roles": {"C": "C1", "R": "R1"}, "members": ["U1", "C1", "R1", "R2"]}],
+        }
+    )
+    return b, p, {"blk": load_recipe(RECIPES / "pair.md")}
+
+
+def assert_at_recipe_offsets(poses: dict[str, Pose], grid: float) -> None:
+    """C1 and R1 sit at their pair-recipe offsets from U1's pose (up to grid snapping)."""
+    recipe = load_recipe(RECIPES / "pair.md")
+    anchor = poses["U1"]
+    pin1 = to_board(anchor, (-2.0, -2.0))
+    c = part_pose(recipe.parts["C"], anchor.rot, pin1)
+    r = part_pose(recipe.parts["R"], anchor.rot, (c.x, c.y))
+    for ref, want in (("C1", c), ("R1", r)):
+        got = poses[ref]
+        assert abs(got.x - want.x) <= grid / 2 + 1e-6 and abs(got.y - want.y) <= grid / 2 + 1e-6, (ref, got, want)
+        assert (got.rot - want.rot) % 360.0 == pytest.approx(0.0, abs=1e-6), (ref, got, want)
+
+
+@pytest.mark.parametrize("seed", [1, 2, 3])
+def test_recipe_blocks_stay_rigid_through_annealing(seed: int) -> None:
+    b, p, recipes = movable_recipe_board()
+    built = place(b, p, recipes, seed=seed, iterations=0, budget_s=60, from_scratch=True)
+    out = place(b, p, recipes, seed=seed, iterations=2000, budget_s=60, from_scratch=True)
+    assert out.accepted > 0 and not out.budget_cap_hit
+    assert_at_recipe_offsets(built.poses, p.board.grid_mm)
+    assert_at_recipe_offsets(out.poses, p.board.grid_mm)
+    assert score(b, p, out.poses).terms.hard_violations == 0
+
+
+def test_recipe_whose_offsets_overlap_its_anchor_is_placed_part_by_part(tmp_path: Path) -> None:
+    # C sits on top of U's courtyard: the block cannot hold its own offsets.
+    (tmp_path / "tight.md").write_text("```yaml\nanchor: U\nparts:\n  C: {rel_to: U, dx: 1.0, dy: 0.0}\n```\n")
+    b, p, _ = movable_recipe_board()
+    p = p.model_copy(update={"groups": [p.groups[0].model_copy(update={"recipe": "tight", "roles": {"C": "C1"}})]})
+    out = place(b, p, {"blk": load_recipe(tmp_path / "tight.md")}, seed=1, iterations=300, budget_s=60, from_scratch=True)
+    assert out.unplaced == []
+    assert score(b, p, out.poses).terms.hard_violations == 0
+
+
+def test_refining_keeps_recipe_offsets_from_the_board() -> None:
+    b, p, recipes = movable_recipe_board()
+    layout = Layout(b, p, recipes)
+    layout.legalise_board()
+    start = dict(layout.poses)
+    layout.anneal(random.Random(5), 1500, math.inf, refine=True)
+
+    def offset(poses: dict[str, Pose], ref: str) -> tuple[float, float, float]:
+        lx, ly = to_local(poses["U1"], (poses[ref].x, poses[ref].y))
+        return (lx, ly, (poses[ref].rot - poses["U1"].rot) % 360.0)
+
+    assert layout.poses["U1"] != start["U1"]
+    for ref in ("C1", "R1"):
+        assert offset(layout.poses, ref) == pytest.approx(offset(start, ref)), ref
+
+
+def test_through_hole_pads_block_parts_on_the_other_side() -> None:
+    jack = [(-2.54, 0.0, 1.7), (0.0, 0.0, 1.7), (2.54, 0.0, 1.7)]
+    b = board(
+        part("J1", 20, 20, w=8, h=3, side="bottom", locked=True, holes=jack),
+        part("R1", 20, 20, pads=[("1", "/A", -0.5, 0), ("2", "/B", 0.5, 0)]),
+        part("B1", 35, 20, w=8, h=8, side="bottom", locked=True),
+        part("J2", 35, 20, w=4, h=2, holes=[(-1.0, 0.0, 1.5), (1.0, 0.0, 1.5)]),
+    )
+    p = Placement()
+    before = score(b, p)
+    assert {(o.a, o.b, o.kind) for o in before.hard.overlaps} == {("J1", "R1", "through_hole"), ("J2", "B1", "through_hole")}
+    layout = Layout(b, p, {})
+    layout.legalise_board()
+    assert score(b, p, layout.poses).terms.hard_violations == 0
+    out = place(b, p, {}, seed=1, iterations=500, budget_s=60, from_scratch=True)
+    assert out.unplaced == []
+    assert score(b, p, out.poses).terms.hard_violations == 0
+
+
+def test_only_parts_in_the_movable_list_move() -> None:
+    b = board(
+        part("R1", 10, 10, pads=[("1", "/A", 0, 0)]),
+        part("R2", 40, 30, pads=[("1", "/A", 0, 0)]),
+        part("R3", 0.5, 20, pads=[("1", "/A", 0, 0)]),  # over the edge, but not movable
+        part("R4", 25, 20, pads=[("1", "/A", 0, 0)]),
+    )
+    p = Placement(movable=["R1", "R2"])
+    out = place(b, p, {}, seed=1, iterations=300, budget_s=60, from_scratch=True)
+    assert set(out.poses) == {"R1", "R2"}
+    s = score(b, p, out.poses)
+    assert s.hard.edge == [] and s.hard.fixed_moved == []
+
+
+def test_off_board_parts_never_move_unless_listed_as_movable() -> None:
+    b = board(
+        part("R1", 10, 10, pads=[("1", "/A", 0, 0)]),
+        part("R5", 70, 10, pads=[("1", "/A", 0, 0)], on_board=False),
+    )
+    assert set(place(b, Placement(), {}, seed=1, iterations=100, budget_s=60).poses) == {"R1"}
+    listed = place(b, Placement(movable=["R1", "R5"]), {}, seed=1, iterations=100, budget_s=60, from_scratch=True)
+    assert set(listed.poses) == {"R1", "R5"}
+    assert listed.unplaced == []
