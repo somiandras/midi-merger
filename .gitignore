@@ -49,3 +49,6 @@ poetry.lock
 # Project management files
 project_mgmt/
 .kata.local.toml
+
+# Claude Code worktrees (nested checkouts of this repo)
+.claude/worktrees/
