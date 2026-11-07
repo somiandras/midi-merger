@@ -349,6 +349,12 @@
 		(path "/3622667a-7c5c-4185-b036-73f5d5ffcabe")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "6" "5" "2" "3" "7" "8" "4")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -753,9 +759,39 @@
 			)
 		)
 		(property ki_fp_filters "DIP*W7.62mm*")
-		(path "/58aafc16-d0de-4203-ada0-63da300e91b9")
+		(path "/73c31548-4541-41d9-a9cf-ec4771b392de")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+			(unit
+				(name "B")
+				(pins "3" "4")
+			)
+			(unit
+				(name "C")
+				(pins "5" "6")
+			)
+			(unit
+				(name "D")
+				(pins "9" "8")
+			)
+			(unit
+				(name "E")
+				(pins "11" "10")
+			)
+			(unit
+				(name "F")
+				(pins "13" "12")
+			)
+			(unit
+				(name "G")
+				(pins "14" "7")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -2257,6 +2293,12 @@
 		(path "/8ec06246-4264-4d6c-b0dc-21a0a82bb757")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2" "3")
+			)
+		)
 		(attr through_hole exclude_from_pos_files exclude_from_bom dnp)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3142,7 +3184,7 @@
 		(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf)")
 		(tags "capacitor")
 		(property "Reference" "C18"
-			(at 0 -1.16 -90)
+			(at 0 -1.16 270)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "ade07099-ff74-4e24-9fc1-79d9a86e93b2")
@@ -3154,7 +3196,7 @@
 			)
 		)
 		(property "Value" "100nF"
-			(at 0 1.16 -90)
+			(at 0 1.16 270)
 			(layer "F.Fab")
 			(uuid "425fafd8-5a6f-4d3c-a1dd-ff5dbf8508ee")
 			(effects
@@ -3165,7 +3207,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "9616e9cf-f7a0-4b1b-a449-d6a1ed80b603")
@@ -3176,7 +3218,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "47c2455b-5167-4655-b90a-df10c855f301")
@@ -3215,6 +3257,12 @@
 		(path "/74282acb-2430-4f72-9440-721cfa14e98a")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -3260,7 +3308,7 @@
 			(uuid "34cfd127-aefe-4db7-85a6-3673d5a67eee")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 0 0 -90)
+			(at 0 0 270)
 			(layer "F.Fab")
 			(uuid "edd74658-f655-4769-b1e4-f2a298d7d49f")
 			(effects
@@ -4217,6 +4265,12 @@
 		(path "/2b2d3a25-98be-4092-bf37-7ac58c628d7a")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -4729,6 +4783,12 @@
 		(path "/f309bc62-72c2-4300-9a4a-f17617771d09")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5239,6 +5299,12 @@
 		(path "/479b2b8d-8c27-42ca-b32c-7e220f3847b5")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -5577,6 +5643,12 @@
 		(path "/d718b733-ea7b-4d8d-9513-45979bf05a57")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -6390,6 +6462,12 @@
 		(path "/5035c344-fcb5-4f2e-9b06-8702ed00e7e4")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -7072,6 +7150,12 @@
 		(path "/3f29a9c2-ca6c-47ff-8e9a-da77b16430cc")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -8479,6 +8563,12 @@
 		(path "/9dfef4be-9b28-4eb1-91b6-a4f16bcda784")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -9796,6 +9886,12 @@
 		(path "/f0270dec-38fe-4ff7-bf26-966d9caaefdb")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -12123,9 +12219,9 @@
 			(size 0.875 0.2)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net "/UART1_RX")
+			(net "unconnected-(U5-GPIO5-Pad7)")
 			(pinfunction "GPIO5_7")
-			(pintype "bidirectional")
+			(pintype "bidirectional+no_connect")
 			(uuid "d27e9cf8-81e2-4207-8b6d-802722dd96cd")
 		)
 		(pad "8" smd roundrect
@@ -12373,9 +12469,9 @@
 			(size 0.875 0.2)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net "unconnected-(U5-GPIO21-Pad32)")
+			(net "/UART1_RX")
 			(pinfunction "GPIO21_32")
-			(pintype "bidirectional+no_connect")
+			(pintype "bidirectional")
 			(uuid "a4de824f-f31c-42a3-8063-e84b7ba0c616")
 		)
 		(pad "33" smd roundrect
@@ -14132,6 +14228,12 @@
 		(path "/c3b71ccd-f29f-4280-8677-e39b521187d4")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
@@ -14642,6 +14744,12 @@
 		(path "/04b5af90-ebdb-47f1-a511-da218c2a6c28")
 		(sheetname "/")
 		(sheetfile "midibox-v3.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1" "2")
+			)
+		)
 		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
