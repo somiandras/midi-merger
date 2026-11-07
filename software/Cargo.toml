@@ -24,6 +24,10 @@ embassy-sync = "0.6.0"
 embedded-io-async = "0.6.1"
 heapless = { version = "0.8.0", features = ["defmt-03"] }
 
+[features]
+# Bare-RP2040 board (hardware-v3/): MIDI IN 1 on GPIO21 instead of GPIO5.
+hw-v3 = []
+
 [profile.release]
 opt-level = "z"     # Optimize for size
 lto = true          # Link-time optimization

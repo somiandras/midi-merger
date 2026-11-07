@@ -345,10 +345,15 @@ async fn main(spawner: Spawner) {
     // UART1: Receive-only (input 1)
     // We only need RX for this input, so we create a BufferedUartRx directly
     // instead of creating a full BufferedUart and splitting it
+    // MIDI IN 1 (J1) RX pin: GP5 on the Pico board (hardware/), GP21 on hardware-v3.
+    #[cfg(not(feature = "hw-v3"))]
+    let uart1_rx_pin = peripherals.PIN_5;
+    #[cfg(feature = "hw-v3")]
+    let uart1_rx_pin = peripherals.PIN_21;
     let usart1_rx = BufferedUartRx::new(
         peripherals.UART1, // Hardware peripheral
         Irqs,              // Interrupt bindings
-        peripherals.PIN_5, // RX pin (GP5, input from MIDI IN 1, J1)
+        uart1_rx_pin,
         // Safe: Each static buffer is used by only one UART instance
         // Using addr_of_mut!() to avoid direct mutable static reference
         unsafe { &mut *core::ptr::addr_of_mut!(UART1_RX_BUF) }, // RX buffer for incoming data

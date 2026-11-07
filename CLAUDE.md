@@ -18,6 +18,10 @@ cd software
 ./flash_release.sh
 # Or manually:
 DEFMT_LOG=error cargo run --release
+
+# hardware-v3 (bare RP2040 board): add the hw-v3 feature to any of the above
+cargo run --features hw-v3
+./flash_release.sh --features hw-v3
 ```
 
 The target is configured in `.cargo/config.toml` as `thumbv6m-none-eabi` with `probe-rs` as the runner.
